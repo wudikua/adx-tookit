@@ -1,4 +1,5 @@
 import com.immomo.exchange.client.Client;
+import com.immomo.exchange.client.MultiThreadSelector;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -10,8 +11,11 @@ public class ClientTest {
 	private static final String url = "http://www.baidu.com";
 
 	@Test
-	public void get() throws MalformedURLException {
-		new Client().get(url);
+	public void get() throws Exception {
+		MultiThreadSelector selector = new MultiThreadSelector(1);
+		selector.init();
+		selector.start();
+		new Client(selector).get(url);
 	}
 
 }
