@@ -23,14 +23,14 @@ public class Client {
 	public void get(String url) throws Exception {
 		URL parsed = new URL(url);
 		Connection conn = getConnection(parsed);
-		conn.connect();
+		conn.prepareConnect();
 	}
 
 	private Connection getConnection(URL parsed) {
 		String cacheKey = ConnectionPool.getKey(parsed.getHost(), parsed.getPort());
 		Connection conn = pool.get(cacheKey);
 		if (conn == null) {
-			conn = new Connection(parsed, selector.getSelector());
+			conn = new Connection(parsed, selector);
 		}
 		return conn;
 	}

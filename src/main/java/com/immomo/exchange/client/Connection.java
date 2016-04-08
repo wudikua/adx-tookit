@@ -16,7 +16,7 @@ public class Connection {
 
 	private SocketChannel channel;
 
-	private Selector selector;
+	private MultiThreadSelector selector;
 
 	private URL url;
 
@@ -24,18 +24,27 @@ public class Connection {
 
 	private boolean connected = false;
 
-	public Connection(URL url, Selector selector) {
+	public Connection(URL url, MultiThreadSelector selector) {
 		this.url = url;
 		this.selector = selector;
 	}
 
+	public boolean prepareConnect() throws IOException {
+		channel = SocketChannel.open();
+		channel.configureBlocking(false);
+		int port = url.getPort();
+		if (port <= 0) {
+			port = 80;
+		}
+		channel.connect(new InetSocketAddress(url.getHost(), port));
+		selector.register(channel, SelectionKey.OP_CONNECT, this);
+		return true;
+	}
+
 	public boolean connect() throws IOException {
 		if (!connected) {
-			channel = SocketChannel.open();
-			channel.configureBlocking(false);
-			channel.register(selector, SelectionKey.OP_WRITE, this);
-			channel.connect(new InetSocketAddress(url.getHost(), url.getPort()));
 			connected = channel.finishConnect();
+			selector.register(channel, SelectionKey.OP_WRITE, this);
 		}
 		return connected;
 	}
@@ -50,11 +59,7 @@ public class Connection {
 				e.printStackTrace();
 			}
 		}
-		try {
-			channel.register(selector, SelectionKey.OP_READ, this);
-		} catch (ClosedChannelException e) {
-			e.printStackTrace();
-		}
+		selector.register(channel, SelectionKey.OP_READ, this);
 	}
 
 	public void read() {

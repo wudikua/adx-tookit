@@ -5,14 +5,22 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by wudikua on 2016/4/4.
  */
 public class MultiThreadSelector implements Runnable {
 
-	public static Selector selector;
+	private static Selector selector;
+
+	private Queue<NIOEvent> pending = new LinkedBlockingDeque<NIOEvent>();
 
 	private int count;
 
@@ -39,6 +47,11 @@ public class MultiThreadSelector implements Runnable {
 		}
 	}
 
+	public void register(SocketChannel channel, int op, Connection connection) {
+		pending.add(new ConnectEvent(channel, connection, op));
+		selector.wakeup();
+	}
+
 	public void run() {
 		while(true) {
 			try {
@@ -49,7 +62,9 @@ public class MultiThreadSelector implements Runnable {
 					while (it.hasNext()) {
 						SelectionKey sk = it.next();
 						Connection conn = (Connection) sk.attachment();
-						if (sk.isWritable()) {
+						if (sk.isConnectable()) {
+							conn.connect();
+						} else if (sk.isWritable()) {
 							conn.write();
 						} else if (sk.isReadable()) {
 							conn.read();
@@ -57,10 +72,15 @@ public class MultiThreadSelector implements Runnable {
 						it.remove();
 					}
 				}
+				if (pending.size() > 0) {
+					Iterator<NIOEvent> it = pending.iterator();
+					while(it.hasNext()) {
+						NIOEvent e = it.next();
+					}
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-
 		}
 	}
 }

@@ -16,6 +16,10 @@ public class ClientTest {
 		selector.init();
 		selector.start();
 		new Client(selector).get(url);
+		new Client(selector).get(url);
+		synchronized (this) {
+			this.wait();
+		}
 	}
 
 }
