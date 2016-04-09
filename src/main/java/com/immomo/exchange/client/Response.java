@@ -38,8 +38,8 @@ public class Response {
 	public void parse(byte[] bs, int length) {
 		for (int i=0; i<length; i++) {
 			if (stat == ParseStat.BODY) {
-				System.arraycopy(bs, i, body, pos, length - i - 2);
-				pos += length - i -2;
+				System.arraycopy(bs, i, body, pos, length - i);
+				pos += length - i;
 				break;
 			}
 			byte b = bs[i];
@@ -109,15 +109,6 @@ public class Response {
 					break;
 			}
 		}
-	}
-
-	public void reset() {
-		key = new StringBuilder();
-		val = new StringBuilder();
-		body = null;
-		header = new HashMap<String, String>();
-		status = 0;
-		stat = ParseStat.NONE;
 	}
 
 	public int getStatus() {

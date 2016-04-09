@@ -1,5 +1,6 @@
 package com.immomo.exchange.client;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,13 +74,18 @@ public class Connection {
 			return;
 		}
 		logger.debug("write data");
-		String request = "GET " + url.getPath() + " HTTP/1.1\nConnection: Keep-Alive\n";
+		String uri = "/";
+		if (!url.getPath().equals("")) {
+			uri  = url.getPath();
+		}
+		String request = "GET " + uri + " HTTP/1.1\nConnection: Keep-Alive\n";
 		ByteBuffer buffer = ByteBuffer.wrap(request.getBytes());
 		while (buffer.hasRemaining()) {
 			try {
 				channel.write(buffer);
 			} catch (IOException e) {
-				logger.error("write error", e);
+				logger.error("write error, close connection", e);
+				close();
 			}
 		}
 		sk.interestOps(SelectionKey.OP_READ);
@@ -93,17 +99,17 @@ public class Connection {
 		if (response == null) {
 			response = new Response();
 		}
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		ByteBuffer buffer = ByteBuffer.allocate(8);
 		try {
 			int len = 0;
 			while((len = channel.read(buffer)) > 0) {
 				buffer.flip();
 				response.parse(buffer.array(), len);
-				logger.info("read {}",new String(buffer.array()));
-				buffer.flip();
+				buffer.clear();
 			}
 		} catch (IOException e) {
-			logger.error("read error", e);
+			logger.error("read error, close connection", e);
+			close();
 		} finally {
 			if (response.finish()) {
 				finish();

@@ -28,7 +28,7 @@ public class ClientThread implements Runnable {
 					o.println("Content-Type: text/html; charset=UTF-8");
 					o.println("Content-Length: " + String.valueOf(System.currentTimeMillis()).length());
 					o.println();
-					o.println(System.currentTimeMillis());
+					o.print(System.currentTimeMillis());
 					o.flush();
 				}
 			}
