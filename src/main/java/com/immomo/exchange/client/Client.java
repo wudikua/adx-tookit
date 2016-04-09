@@ -1,16 +1,22 @@
 package com.immomo.exchange.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.nio.channels.Selector;
+import java.util.concurrent.Future;
 
 /**
  * Created by mengjun on 16/4/1.
  */
 public class Client {
+
+	private static final Logger logger = LoggerFactory.getLogger(Client.class);
 
 	private ConnectionPool pool = new ConnectionPool();
 
@@ -20,10 +26,11 @@ public class Client {
 		this.selector = selector;
 	}
 
-	public void get(String url) throws Exception {
+	public Future<Response> get(String url) throws Exception {
 		URL parsed = new URL(url);
 		Connection conn = getConnection(parsed);
 		conn.prepareConnect();
+		return new ResponseFuture(conn);
 	}
 
 	private Connection getConnection(URL parsed) {

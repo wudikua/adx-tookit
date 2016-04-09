@@ -2,6 +2,8 @@ package com.immomo.exchange.client;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -11,6 +13,8 @@ import java.util.List;
  * Created by mengjun on 16/4/1.
  */
 public class ConnectionPool {
+
+	private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
 
 	private Multimap<String, Connection> free;
 

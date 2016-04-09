@@ -16,15 +16,19 @@ public class ConnectEvent implements NIOEvent {
 		this.op = op;
 	}
 
+	public NIOEventType getType() {
+		return NIOEventType.CONNECT;
+	}
+
 	public SocketChannel getChannel() {
 		return channel;
 	}
 
 	public Connection getConnection() {
-		return null;
+		return connection;
 	}
 
 	public int getOp() {
-		return 0;
+		return op;
 	}
 }

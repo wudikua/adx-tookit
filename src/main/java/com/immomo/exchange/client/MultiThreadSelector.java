@@ -1,6 +1,10 @@
 package com.immomo.exchange.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -18,9 +22,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class MultiThreadSelector implements Runnable {
 
+	private static final Logger logger = LoggerFactory.getLogger(MultiThreadSelector.class);
+
 	private static Selector selector;
 
-	private Queue<NIOEvent> pending = new LinkedBlockingDeque<NIOEvent>();
+	private static Queue<NIOEvent> pending = new LinkedBlockingDeque<NIOEvent>();
 
 	private int count;
 
@@ -49,33 +55,44 @@ public class MultiThreadSelector implements Runnable {
 
 	public void register(SocketChannel channel, int op, Connection connection) {
 		pending.add(new ConnectEvent(channel, connection, op));
+		logger.debug("add pending queue {}", pending.size());
 		selector.wakeup();
+	}
+
+	private void changeEvent() throws ClosedChannelException {
+		logger.debug("check pending size is {}", pending.size());
+		if (pending.size() > 0) {
+			logger.debug("something is to be register");
+			Iterator<NIOEvent> it = pending.iterator();
+			while(it.hasNext()) {
+				NIOEvent e = it.next();
+				logger.debug("register {}", e.getConnection());
+				e.getChannel().register(selector, e.getOp(), e.getConnection());
+				pending.remove(e);
+			}
+		}
 	}
 
 	public void run() {
 		while(true) {
 			try {
+				changeEvent();
 				int select = selector.select();
+				logger.debug("select is {}", select);
 				if (select > 0) {
-					Set<SelectionKey> keys = selector.selectedKeys();
-					Iterator<SelectionKey> it = keys.iterator();
+					Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 					while (it.hasNext()) {
 						SelectionKey sk = it.next();
+						it.remove();
+						logger.debug("key op {}", sk.readyOps());
 						Connection conn = (Connection) sk.attachment();
 						if (sk.isConnectable()) {
-							conn.connect();
+							conn.connect(sk);
 						} else if (sk.isWritable()) {
-							conn.write();
+							conn.write(sk);
 						} else if (sk.isReadable()) {
-							conn.read();
+							conn.read(sk);
 						}
-						it.remove();
-					}
-				}
-				if (pending.size() > 0) {
-					Iterator<NIOEvent> it = pending.iterator();
-					while(it.hasNext()) {
-						NIOEvent e = it.next();
 					}
 				}
 			} catch (IOException e) {
