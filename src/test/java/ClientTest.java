@@ -28,7 +28,7 @@ public class ClientTest {
 			e.printStackTrace();
 		}
 	}
-	
+
 	@Test
 	public void getTimeout() throws Exception {
 		Future<Response> future = client.get(url);
