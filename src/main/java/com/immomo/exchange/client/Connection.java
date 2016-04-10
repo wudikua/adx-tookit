@@ -30,7 +30,7 @@ public class Connection {
 
 	private boolean connected = false;
 
-	public Response response = new Response();
+	private Response response = new Response();
 
 	public final Object notify = new Object();
 
@@ -117,7 +117,7 @@ public class Connection {
 		}
 	}
 
-	public void finish() {
+	private void finish() {
 		synchronized (notify) {
 			notify.notifyAll();
 		}
@@ -131,5 +131,11 @@ public class Connection {
 		} catch (IOException e) {
 			logger.error("close error", e);
 		}
+	}
+
+	public Response getResponse() {
+		Response r = response;
+		response = null;
+		return r;
 	}
 }

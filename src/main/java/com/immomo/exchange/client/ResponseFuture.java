@@ -40,13 +40,20 @@ public class ResponseFuture implements Future<Response> {
 		synchronized (connection.notify) {
 			connection.notify.wait();
 		}
-		Response response =  connection.response;
-		connection.finish();
-		connection.response = null;
-		return response;
+		done = true;
+		Response response =  connection.getResponse();
+		return response.finish() ? response : null;
 	}
 
 	public Response get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-		return null;
+		Timer.addTimeout(new Timer.TimerUnit(unit.toMillis(timeout)) {
+			@Override
+			public void onTime() throws Exception {
+				synchronized (connection.notify) {
+					connection.notify.notifyAll();
+				}
+			}
+		});
+		return get();
 	}
 }
