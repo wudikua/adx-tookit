@@ -32,7 +32,7 @@ public class ConnectionPool {
 				if (conns == null || conns.size() == 0) {
 					return null;
 				}
-				Connection first = conns.peekFirst();
+				Connection first = conns.removeFirst();
 				return first;
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -46,6 +46,7 @@ public class ConnectionPool {
 			if (!free.containsKey(conn.getCacheKey())) {
 				free.put(conn.getCacheKey(), new LinkedList<Connection>());
 			}
+			logger.debug("return connection {}", conn.hashCode());
 	 		free.get(conn.getCacheKey()).addLast(conn);
 		}
 	}

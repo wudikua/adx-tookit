@@ -43,7 +43,7 @@ public class ResponseFuture implements Future<Response> {
 		done = true;
 		Response response =  connection.getResponse();
 		if (response == null) {
-			throw new ExecutionException(new Exception("response is null"));
+			throw new ExecutionException(new Exception("request fail"));
 		}
 		if (response.finish()) {
 			Client.pool.add(connection);

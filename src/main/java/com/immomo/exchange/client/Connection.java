@@ -118,7 +118,7 @@ public class Connection {
 				response.parse(buffer.array(), len);
 				buffer.clear();
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error("read error, close connection", e);
 			close();
 		} finally {

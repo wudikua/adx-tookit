@@ -13,14 +13,12 @@ import java.util.concurrent.Future;
  */
 public class ClientTest {
 
-	private static final String url = "http://lian.us/";
-
-	private static MultiThreadSelector selector;
+	private static final String url = "http://lian.us";
 
 	private static Client client;
 
 	static {
-		selector = new MultiThreadSelector(1);
+		MultiThreadSelector selector = new MultiThreadSelector(1);
 		try {
 			selector.init();
 			selector.start();
@@ -32,14 +30,12 @@ public class ClientTest {
 
 	@Test
 	public void get() throws Exception {
-		for (int i=0; i<1; i++) {
+		for (int i=0; i<10; i++) {
 			new Thread(new Runnable() {
 				public void run() {
 					for (int i = 0; i < 10; i++) {
 						try {
-							Long begin = System.currentTimeMillis();
 							request();
-							System.out.println("time use " + (System.currentTimeMillis() - begin));
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -58,8 +54,13 @@ public class ClientTest {
 	private void request() throws Exception {
 		Future<Response> future = client.get(url);
 		Response resp = future.get();
-//		System.out.println(new String(resp.getBody()));
-		Thread.sleep(1000);
+		if (resp == null) {
+			future.cancel(true);
+			System.out.println("null");
+		} else {
+			System.out.println(System.currentTimeMillis()/1000 + " " + new String(resp.getBody()).substring(0, 10) + "...");
+		}
+//		Thread.sleep(1000);
 	}
 
 	@Test

@@ -88,17 +88,11 @@ public class MultiThreadSelector implements Runnable {
 						logger.debug("key op {}", sk.readyOps());
 						Connection conn = (Connection) sk.attachment();
 						if (sk.isConnectable()) {
-							long begin = System.currentTimeMillis();
 							conn.connect(sk);
-							System.out.println("connect " +  (System.currentTimeMillis() - begin));
 						} else if (sk.isWritable()) {
-							long begin = System.currentTimeMillis();
 							conn.write(sk);
-							System.out.println("write " +  (System.currentTimeMillis() - begin));
 						} else if (sk.isReadable()) {
-							long begin = System.currentTimeMillis();
 							conn.read(sk);
-							System.out.println("read " +  (System.currentTimeMillis() - begin));
 						}
 					}
 				}
