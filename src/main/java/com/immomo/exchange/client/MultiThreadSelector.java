@@ -60,16 +60,21 @@ public class MultiThreadSelector implements Runnable {
 		selector.wakeup();
 	}
 
-	private void changeEvent() throws ClosedChannelException {
+	private void changeEvent() {
 		logger.debug("check pending size is {}", pending.size());
 		if (pending.size() > 0) {
 			logger.debug("something is to be register");
 			Iterator<NIOEvent> it = pending.iterator();
 			while(it.hasNext()) {
 				NIOEvent e = it.next();
+				it.remove();
 				logger.debug("register {}", e.getConnection());
-				e.getChannel().register(selector, e.getOp(), e.getConnection());
-				pending.remove(e);
+				try {
+					e.getChannel().register(selector, e.getOp(), e.getConnection());
+				} catch (ClosedChannelException  ex) {
+					ex.printStackTrace();
+					e.getConnection().close();
+				}
 			}
 		}
 	}
