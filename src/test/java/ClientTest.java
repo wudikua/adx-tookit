@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by mengjun on 16/4/1.
@@ -27,10 +28,23 @@ public class ClientTest {
 			e.printStackTrace();
 		}
 	}
+	
+	@Test
+	public void getTimeout() throws Exception {
+		Future<Response> future = client.get(url);
+		Response resp = future.get(10, TimeUnit.MILLISECONDS);
+		if (resp == null) {
+			future.cancel(true);
+			System.out.println("null");
+		} else {
+			System.out.println(System.currentTimeMillis()/1000 + " " + new String(resp.getBody()).substring(0, 10) + "...");
+		}
+		Thread.sleep(1000);
+	}
 
 	@Test
 	public void get() throws Exception {
-		for (int i=0; i<10; i++) {
+		for (int i=0; i<2; i++) {
 			new Thread(new Runnable() {
 				public void run() {
 					for (int i = 0; i < 10; i++) {
@@ -60,7 +74,7 @@ public class ClientTest {
 		} else {
 			System.out.println(System.currentTimeMillis()/1000 + " " + new String(resp.getBody()).substring(0, 10) + "...");
 		}
-//		Thread.sleep(1000);
+		Thread.sleep(1000);
 	}
 
 	@Test
