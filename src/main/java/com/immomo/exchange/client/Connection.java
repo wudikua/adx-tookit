@@ -4,6 +4,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.PooledConnection;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
@@ -34,6 +35,8 @@ public class Connection {
 
 	public final Object notify = new Object();
 
+	private String cacheKey;
+
 	@Override
 	public String toString() {
 		return "Connection{" +
@@ -44,9 +47,14 @@ public class Connection {
 	public Connection(URL url, MultiThreadSelector selector) {
 		this.url = url;
 		this.selector = selector;
+		this.cacheKey = ConnectionPool.getKey(url.getHost(), url.getPort());
 	}
 
 	public boolean prepareConnect() throws IOException {
+		if (connected) {
+			selector.register(channel, SelectionKey.OP_WRITE, this);
+			return true;
+		}
 		channel = SocketChannel.open();
 		channel.configureBlocking(false);
 		int port = url.getPort();
@@ -78,7 +86,10 @@ public class Connection {
 		if (!url.getPath().equals("")) {
 			uri  = url.getPath();
 		}
-		String request = "GET " + uri + " HTTP/1.1\nConnection: Keep-Alive\n";
+		String request = "GET " + uri + " HTTP/1.1\n" +
+				"Connection: keep-alive\n" +
+				"Host: "+url.getHost()+"\n" +
+				"User-Agent:AdExchange\n\n";
 		ByteBuffer buffer = ByteBuffer.wrap(request.getBytes());
 		while (buffer.hasRemaining()) {
 			try {
@@ -137,5 +148,9 @@ public class Connection {
 		Response r = response;
 		response = null;
 		return r;
+	}
+
+	public String getCacheKey() {
+		return cacheKey;
 	}
 }

@@ -18,7 +18,7 @@ public class Client {
 
 	private static final Logger logger = LoggerFactory.getLogger(Client.class);
 
-	private ConnectionPool pool = new ConnectionPool();
+	public static ConnectionPool pool = new ConnectionPool();
 
 	private MultiThreadSelector selector;
 

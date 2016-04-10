@@ -42,7 +42,15 @@ public class ResponseFuture implements Future<Response> {
 		}
 		done = true;
 		Response response =  connection.getResponse();
-		return response.finish() ? response : null;
+		if (response == null) {
+			throw new ExecutionException(new Exception("response is null"));
+		}
+		if (response.finish()) {
+			Client.pool.add(connection);
+			return response;
+		} else {
+			return null;
+		}
 	}
 
 	public Response get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {

@@ -13,7 +13,7 @@ import java.util.concurrent.Future;
  */
 public class ClientTest {
 
-	private static final String url = "http://127.0.0.1";
+	private static final String url = "http://lian.us/";
 
 	private static MultiThreadSelector selector;
 
@@ -32,28 +32,33 @@ public class ClientTest {
 
 	@Test
 	public void get() throws Exception {
-		for (int i=0; i<10; i++) {
+		for (int i=0; i<1; i++) {
 			new Thread(new Runnable() {
 				public void run() {
 					for (int i = 0; i < 10; i++) {
 						try {
+							Long begin = System.currentTimeMillis();
 							request();
+							System.out.println("time use " + (System.currentTimeMillis() - begin));
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
 					}
+					synchronized (ClientTest.class) {
+						ClientTest.class.notifyAll();
+					}
 				}
 			}).start();
 		}
-		synchronized (this) {
-			this.wait();
+		synchronized (ClientTest.class) {
+			ClientTest.class.wait();
 		}
 	}
 
 	private void request() throws Exception {
 		Future<Response> future = client.get(url);
 		Response resp = future.get();
-		System.out.println(new String(resp.getBody()));
+//		System.out.println(new String(resp.getBody()));
 		Thread.sleep(1000);
 	}
 
