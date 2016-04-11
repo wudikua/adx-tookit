@@ -1,11 +1,9 @@
 import com.immomo.exchange.client.Client;
-import com.immomo.exchange.client.MultiThreadSelector;
-import com.immomo.exchange.client.Response;
+import com.immomo.exchange.client.nio.MultiThreadSelector;
+import com.immomo.exchange.client.protocal.Response;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -14,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClientTest {
 
-	private static final String url = "http://lian.us";
+	private static final String url = "http://www.baidu.com";
 
 	private static Client client;
 

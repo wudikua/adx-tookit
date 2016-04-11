@@ -1,4 +1,6 @@
-package com.immomo.exchange.client;
+package com.immomo.exchange.client.event;
+
+import com.immomo.exchange.client.connection.Connection;
 
 import java.nio.channels.SocketChannel;
 

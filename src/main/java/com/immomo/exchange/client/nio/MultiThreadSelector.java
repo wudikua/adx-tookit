@@ -1,5 +1,9 @@
-package com.immomo.exchange.client;
+package com.immomo.exchange.client.nio;
 
+import com.immomo.exchange.client.connection.Connection;
+import com.immomo.exchange.client.connection.NIOHandler;
+import com.immomo.exchange.client.event.ConnectEvent;
+import com.immomo.exchange.client.event.NIOEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,13 +13,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by wudikua on 2016/4/4.
@@ -81,29 +80,37 @@ public class MultiThreadSelector implements Runnable {
 
 	public void run() {
 		while(true) {
+			changeEvent();
+			int select = 0;
 			try {
-				changeEvent();
-				int select = selector.select();
-				logger.debug("select is {}", select);
-				if (select > 0) {
-					Iterator<SelectionKey> it = selector.selectedKeys().iterator();
-					while (it.hasNext()) {
-						SelectionKey sk = it.next();
-						it.remove();
-						logger.debug("key op {}", sk.readyOps());
-						Connection conn = (Connection) sk.attachment();
-						if (sk.isConnectable()) {
-							conn.connect(sk);
-						} else if (sk.isWritable()) {
-							conn.write(sk);
-						} else if (sk.isReadable()) {
-							conn.read(sk);
-						}
-					}
-				}
+				select = selector.select();
 			} catch (IOException e) {
 				e.printStackTrace();
+				continue;
 			}
+			logger.debug("select is {}", select);
+			if (select > 0) {
+				Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+				while (it.hasNext()) {
+					try {
+						SelectionKey sk = it.next();
+						logger.debug("key op {}", sk.readyOps());
+						NIOHandler handler = (NIOHandler) sk.attachment();
+						if (sk.isConnectable()) {
+							handler.connect(sk);
+						} else if (sk.isWritable()) {
+							handler.write(sk);
+						} else if (sk.isReadable()) {
+							handler.read(sk);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					} finally {
+						it.remove();
+					}
+				}
+			}
+
 		}
 	}
 }

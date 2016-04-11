@@ -1,7 +1,5 @@
-import com.immomo.exchange.client.Timer;
+import com.immomo.exchange.client.util.Timer;
 import org.junit.Test;
-
-import java.util.concurrent.Callable;
 
 /**
  * Created by wudikua on 2016/4/10.

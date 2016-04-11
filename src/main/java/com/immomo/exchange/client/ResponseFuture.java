@@ -1,5 +1,9 @@
 package com.immomo.exchange.client;
 
+import com.immomo.exchange.client.connection.Connection;
+import com.immomo.exchange.client.protocal.Response;
+import com.immomo.exchange.client.util.Timer;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;

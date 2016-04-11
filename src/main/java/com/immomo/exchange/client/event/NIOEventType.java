@@ -1,4 +1,4 @@
-package com.immomo.exchange.client;
+package com.immomo.exchange.client.event;
 
 /**
  * Created by wudikua on 2016/4/9.

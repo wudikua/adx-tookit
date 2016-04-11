@@ -1,4 +1,4 @@
-package com.immomo.exchange.client;
+package com.immomo.exchange.client.util;
 
 import com.google.common.collect.*;
 /**

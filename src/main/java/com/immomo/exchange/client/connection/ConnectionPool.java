@@ -1,8 +1,6 @@
-package com.immomo.exchange.client;
+package com.immomo.exchange.client.connection;
 
-import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

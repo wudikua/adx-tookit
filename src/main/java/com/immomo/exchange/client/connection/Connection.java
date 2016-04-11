@@ -1,23 +1,22 @@
-package com.immomo.exchange.client;
+package com.immomo.exchange.client.connection;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
+import com.immomo.exchange.client.nio.MultiThreadSelector;
+import com.immomo.exchange.client.protocal.Request;
+import com.immomo.exchange.client.protocal.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sql.PooledConnection;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 /**
  * Created by mengjun on 16/4/1.
  */
-public class Connection {
+public class Connection implements NIOHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(Connection.class);
 
@@ -82,15 +81,7 @@ public class Connection {
 			return;
 		}
 		logger.debug("write data");
-		String uri = "/";
-		if (!url.getPath().equals("")) {
-			uri  = url.getPath();
-		}
-		String request = "GET " + uri + " HTTP/1.1\n" +
-				"Connection: keep-alive\n" +
-				"Host: "+url.getHost()+"\n" +
-				"User-Agent:AdExchange\n\n";
-		ByteBuffer buffer = ByteBuffer.wrap(request.getBytes());
+		ByteBuffer buffer = ByteBuffer.wrap(Request.buildRequest(url));
 		while (buffer.hasRemaining()) {
 			try {
 				channel.write(buffer);

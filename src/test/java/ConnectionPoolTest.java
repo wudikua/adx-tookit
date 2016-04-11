@@ -1,6 +1,6 @@
 import com.google.common.collect.Lists;
-import com.immomo.exchange.client.Connection;
-import com.immomo.exchange.client.ConnectionPool;
+import com.immomo.exchange.client.connection.Connection;
+import com.immomo.exchange.client.connection.ConnectionPool;
 import org.junit.Test;
 
 import java.net.MalformedURLException;

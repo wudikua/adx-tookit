@@ -1,8 +1,5 @@
-package com.immomo.exchange.client;
+package com.immomo.exchange.client.protocal;
 
-import java.awt.image.DataBufferByte;
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 

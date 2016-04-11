@@ -1,14 +1,13 @@
 package com.immomo.exchange.client;
 
+import com.immomo.exchange.client.connection.Connection;
+import com.immomo.exchange.client.connection.ConnectionPool;
+import com.immomo.exchange.client.protocal.Response;
+import com.immomo.exchange.client.nio.MultiThreadSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.Proxy;
 import java.net.URL;
-import java.nio.channels.Selector;
 import java.util.concurrent.Future;
 
 /**
