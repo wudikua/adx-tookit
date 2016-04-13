@@ -65,6 +65,7 @@ public class Connection implements NIOHandler {
 		return true;
 	}
 
+	@Override
 	public boolean connect(SelectionKey sk) throws IOException {
 		if (closed) {
 			return false;
@@ -76,6 +77,7 @@ public class Connection implements NIOHandler {
 		return connected;
 	}
 
+	@Override
 	public void write(SelectionKey sk) {
 		if (closed) {
 			return;
@@ -93,6 +95,7 @@ public class Connection implements NIOHandler {
 		sk.interestOps(SelectionKey.OP_READ);
 	}
 
+	@Override
 	public void read(SelectionKey sk) {
 		if (closed) {
 			return;
@@ -101,7 +104,7 @@ public class Connection implements NIOHandler {
 		if (response == null) {
 			response = new Response();
 		}
-		ByteBuffer buffer = ByteBuffer.allocate(8);
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		try {
 			int len = 0;
 			while((len = channel.read(buffer)) > 0) {
@@ -114,20 +117,24 @@ public class Connection implements NIOHandler {
 			close();
 		} finally {
 			if (response.finish()) {
-				finish();
+				futureFinish();
 			}
 		}
 	}
 
-	private void finish() {
+	private void futureFinish() {
 		synchronized (notify) {
 			notify.notifyAll();
 		}
 	}
 
+	@Override
 	public void close() {
+		if (closed) {
+			return;
+		}
 		try {
-			finish();
+			futureFinish();
 			channel.close();
 			closed = true;
 		} catch (IOException e) {

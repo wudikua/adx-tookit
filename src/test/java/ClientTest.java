@@ -41,8 +41,22 @@ public class ClientTest {
 	}
 
 	@Test
+	public void hex() {
+		String s = "17ffe";
+		int n=0;
+		for (int i=0; i<s.length(); i++) {
+			if (s.charAt(i) >= 'a') {
+				n = n*16 + 10 + s.charAt(i) - 'a';
+			} else {
+				n = n*16 + s.charAt(i) - '0';
+			}
+		}
+		System.out.println(n);
+	}
+
+	@Test
 	public void get() throws Exception {
-		for (int i=0; i<2; i++) {
+		for (int i=0; i<1; i++) {
 			new Thread(new Runnable() {
 				public void run() {
 					for (int i = 0; i < 10; i++) {
@@ -63,6 +77,7 @@ public class ClientTest {
 		}
 	}
 
+
 	private void request() throws Exception {
 		Future<Response> future = client.get(url);
 		Response resp = future.get();
@@ -70,7 +85,7 @@ public class ClientTest {
 			future.cancel(true);
 			System.out.println("null");
 		} else {
-			System.out.println(System.currentTimeMillis()/1000 + " " + new String(resp.getBody()).substring(0, 10) + "...");
+			System.out.println(System.currentTimeMillis()/1000 + " " + new String(resp.getBody()).substring(0, 13) + "...");
 		}
 		Thread.sleep(1000);
 	}

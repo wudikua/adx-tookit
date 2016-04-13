@@ -92,10 +92,12 @@ public class MultiThreadSelector implements Runnable {
 			if (select > 0) {
 				Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 				while (it.hasNext()) {
+					NIOHandler handler = null;
+					SelectionKey sk = null;
 					try {
-						SelectionKey sk = it.next();
+						sk = it.next();
 						logger.debug("key op {}", sk.readyOps());
-						NIOHandler handler = (NIOHandler) sk.attachment();
+						handler = (NIOHandler) sk.attachment();
 						if (sk.isConnectable()) {
 							handler.connect(sk);
 						} else if (sk.isWritable()) {
@@ -104,6 +106,9 @@ public class MultiThreadSelector implements Runnable {
 							handler.read(sk);
 						}
 					} catch (Exception e) {
+						if (handler != null) {
+							handler.close();
+						}
 						e.printStackTrace();
 					} finally {
 						it.remove();

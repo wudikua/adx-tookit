@@ -1,6 +1,8 @@
 /**
  * Created by wudikua on 2016/4/9.
  */
+import com.sun.org.apache.xerces.internal.impl.dv.util.HexBin;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.Arrays;
@@ -21,14 +23,18 @@ public class ClientThread implements Runnable {
 			o = new PrintStream(_s.getOutputStream());
 			while(true) {
 				String request = this.getValidRequest();
-				if( !request.equals("") ) {
+				if( !request.equals("") && request.length() > 0) {
+					System.out.println("req " + request);
 					o.println("HTTP/1.1 200 OK");
 					o.println("Connection:keep-alive");
 					o.println("Server: TimeServer");
 					o.println("Content-Type: text/html; charset=UTF-8");
-					o.println("Content-Length: " + String.valueOf(System.currentTimeMillis()).length());
+					o.println("Content-Transfer: chunked");
+//					o.println("Content-Length: " + String.valueOf(System.currentTimeMillis()).length());
 					o.println();
-					o.print(System.currentTimeMillis());
+					o.println("d");
+					o.println(System.currentTimeMillis());
+					o.println("0");
 					o.flush();
 				}
 			}

@@ -11,7 +11,7 @@ public class TimeServer {
 
 	public TimeServer() {
 		try {
-			this.ss = new ServerSocket(80);
+			this.ss = new ServerSocket(8880);
 			while (true) {
 				this.client = this.ss.accept();
 				ClientThread ct = new ClientThread(this.client);
