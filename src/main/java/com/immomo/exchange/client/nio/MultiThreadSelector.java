@@ -14,7 +14,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Queue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.*;
 
 /**
  * Created by wudikua on 2016/4/4.
@@ -26,6 +26,8 @@ public class MultiThreadSelector implements Runnable {
 	private static Selector selector;
 
 	private static Queue<NIOEvent> pending = new LinkedBlockingDeque<NIOEvent>();
+
+	private ExecutorService reactor = Executors.newFixedThreadPool(10);
 
 	private int count;
 
@@ -98,16 +100,23 @@ public class MultiThreadSelector implements Runnable {
 						sk = it.next();
 						logger.debug("key op {}", sk.readyOps());
 						handler = (NIOHandler) sk.attachment();
-						if (sk.isConnectable()) {
+						if (handler == null || !sk.isValid()) {
+							sk.cancel();
+						} else if (sk.isConnectable()) {
 							handler.connect(sk);
 						} else if (sk.isWritable()) {
 							handler.write(sk);
 						} else if (sk.isReadable()) {
 							handler.read(sk);
+						} else {
+							sk.cancel();
 						}
 					} catch (Exception e) {
 						if (handler != null) {
 							handler.close();
+						}
+						if (sk != null) {
+							sk.cancel();
 						}
 						e.printStackTrace();
 					} finally {
