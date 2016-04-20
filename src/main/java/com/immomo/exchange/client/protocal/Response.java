@@ -59,6 +59,7 @@ public class Response {
 				case BODY:
 					System.arraycopy(bs, i, body, pos, length - i);
 					pos += length - i;
+					i += length - i;
 					break;
 				case NONE:
 					if (b == ' ') {
@@ -118,7 +119,7 @@ public class Response {
 						stat = ParseStat.HEADER_KEY;
 						header.put(key.toString(), val.toString());
 						contentLength = Integer.parseInt(val.toString());
-						grow(contentLength);
+						grow(contentLength, bs);
 						key.delete(0, key.capacity());
 						val.delete(0, val.capacity());
 						break;
@@ -128,7 +129,7 @@ public class Response {
 				case HEADER_CHUNK_LENGTH:
 					if (b == ' ' || b == '\r') break;
 					if (b == '\n') {
-						grow(chunkLength);
+						grow(chunkLength, bs);
 						if (chunkLength == 0) {
 							stat = ParseStat.CHUNK_EOF;
 						} else {
@@ -159,19 +160,22 @@ public class Response {
 	 * 在之前的容量上扩展cap个字节
 	 * @param cap 扩容的数量
 	 */
-	private void grow(int cap) {
+	private void grow(int cap, byte[] bs) {
 		if (cap == 0) {
 			return;
+		}
+		if (cap < 0) {
+			System.out.println(new String(bs) + "\n error!!");
+			System.exit(0);
 		}
 		if (body == null) {
 			body = new byte[cap];
 			return;
 		}
-		// overflow-conscious code
 		int oldCapacity = body.length;
 		int newCapacity = oldCapacity + cap;
 		if (newCapacity < 0) {
-			if (cap < 0) // overflow
+			if (cap < 0)
 				throw new OutOfMemoryError();
 			newCapacity = Integer.MAX_VALUE;
 		}

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -72,7 +73,7 @@ public class Connection implements NIOHandler {
 		}
 		if (!connected) {
 			connected = channel.finishConnect();
-			sk.interestOps(SelectionKey.OP_WRITE);
+			selector.register(channel, SelectionKey.OP_WRITE, this);
 		}
 		return connected;
 	}
@@ -89,10 +90,12 @@ public class Connection implements NIOHandler {
 				channel.write(buffer);
 			} catch (IOException e) {
 				logger.error("write error, close connection", e);
+				sk.cancel();
 				close();
+				return;
 			}
 		}
-		sk.interestOps(SelectionKey.OP_READ);
+		selector.register(channel, SelectionKey.OP_READ, this);
 	}
 
 	@Override
@@ -104,7 +107,7 @@ public class Connection implements NIOHandler {
 		if (response == null) {
 			response = new Response();
 		}
-		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		ByteBuffer buffer = ByteBuffer.allocate(1024 * 64);
 		try {
 			int len = 0;
 			while((len = channel.read(buffer)) > 0) {
@@ -114,6 +117,7 @@ public class Connection implements NIOHandler {
 			}
 		} catch (Exception e) {
 			logger.error("read error, close connection", e);
+			sk.cancel();
 			close();
 		} finally {
 			if (response.finish()) {

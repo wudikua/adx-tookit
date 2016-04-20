@@ -2,8 +2,10 @@ package com.immomo.exchange.client.nio;
 
 import com.immomo.exchange.client.connection.Connection;
 import com.immomo.exchange.client.connection.NIOHandler;
+import com.immomo.exchange.client.event.ChangeEvent;
 import com.immomo.exchange.client.event.ConnectEvent;
 import com.immomo.exchange.client.event.NIOEvent;
+import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +16,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.*;
 
 /**
@@ -25,7 +29,7 @@ public class MultiThreadSelector implements Runnable {
 
 	private static Selector selector;
 
-	private static Queue<NIOEvent> pending = new LinkedBlockingDeque<NIOEvent>();
+	private static Queue<NIOEvent> pending = new ConcurrentLinkedQueue<NIOEvent>();
 
 	private ExecutorService reactor = Executors.newFixedThreadPool(10);
 
@@ -56,7 +60,11 @@ public class MultiThreadSelector implements Runnable {
 	}
 
 	public void register(SocketChannel channel, int op, Connection connection) {
-		pending.add(new ConnectEvent(channel, connection, op));
+		if (SelectionKey.OP_CONNECT == op) {
+			pending.add(new ConnectEvent(channel, connection, op));
+		} else {
+			pending.add(new ChangeEvent(channel, connection, op));
+		}
 		logger.debug("add pending queue {}", pending.size());
 		selector.wakeup();
 	}
@@ -69,13 +77,91 @@ public class MultiThreadSelector implements Runnable {
 			while(it.hasNext()) {
 				NIOEvent e = it.next();
 				it.remove();
-				logger.debug("register {}", e.getConnection());
+				logger.debug("changEvent {}", e.getConnection());
 				try {
 					e.getChannel().register(selector, e.getOp(), e.getConnection());
 				} catch (ClosedChannelException  ex) {
 					ex.printStackTrace();
 					e.getConnection().close();
 				}
+			}
+		}
+	}
+
+	private abstract class NIOTask implements Runnable {
+
+		protected NIOHandler handler;
+
+		protected SelectionKey sk;
+
+		private NIOTask(NIOHandler handler, SelectionKey sk) {
+			this.handler = handler;
+			this.sk = sk;
+		}
+	}
+
+	private class ConnectTask extends NIOTask {
+
+		private ConnectTask(NIOHandler handler, SelectionKey sk) {
+			super(handler, sk);
+		}
+
+		@Override
+		public void run() {
+			try {
+				handler.connect(sk);
+			} catch (Exception e) {
+				if (handler != null) {
+					handler.close();
+				}
+				if (sk != null) {
+					sk.cancel();
+				}
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private class ReadTask extends NIOTask {
+
+		private ReadTask(NIOHandler handler, SelectionKey sk) {
+			super(handler, sk);
+		}
+
+		@Override
+		public void run() {
+			try {
+				handler.read(sk);
+			} catch (Exception e) {
+				if (handler != null) {
+					handler.close();
+				}
+				if (sk != null) {
+					sk.cancel();
+				}
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private class WriteTask extends NIOTask {
+
+		private WriteTask(NIOHandler handler, SelectionKey sk) {
+			super(handler, sk);
+		}
+
+		@Override
+		public void run() {
+			try {
+				handler.write(sk);
+			} catch (Exception e) {
+				if (handler != null) {
+					handler.close();
+				}
+				if (sk != null) {
+					sk.cancel();
+				}
+				e.printStackTrace();
 			}
 		}
 	}
@@ -98,16 +184,21 @@ public class MultiThreadSelector implements Runnable {
 					SelectionKey sk = null;
 					try {
 						sk = it.next();
+						if (!sk.isValid()) {
+							sk.cancel();
+							continue;
+						}
 						logger.debug("key op {}", sk.readyOps());
 						handler = (NIOHandler) sk.attachment();
-						if (handler == null || !sk.isValid()) {
+						if (sk.isConnectable()) {
+							reactor.submit(new ConnectTask(handler, sk));
 							sk.cancel();
-						} else if (sk.isConnectable()) {
-							handler.connect(sk);
 						} else if (sk.isWritable()) {
-							handler.write(sk);
+							reactor.submit(new WriteTask(handler, sk));
+							sk.cancel();
 						} else if (sk.isReadable()) {
-							handler.read(sk);
+							reactor.submit(new ReadTask(handler, sk));
+							sk.cancel();
 						} else {
 							sk.cancel();
 						}
@@ -124,7 +215,6 @@ public class MultiThreadSelector implements Runnable {
 					}
 				}
 			}
-
 		}
 	}
 }
