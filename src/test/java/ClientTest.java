@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ClientTest {
 
-	private static final String url = "http://www.baidu.com";
+	private static final String url = "http://127.0.0.1:8880";
 
 	private static Client client;
 
@@ -108,12 +108,13 @@ public class ClientTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<1; j++) {
+					for (int j =0; j<10; j++) {
 						try {
 							Future<Response> future = client.get(url);
 							Response resp = future.get(3000, TimeUnit.MILLISECONDS);
 							if (resp.getStatus() == 200) {
 								success.incrementAndGet();
+								System.out.println(new String(resp.getBody()));
 							}
 						} catch (Exception e) {
 

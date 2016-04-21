@@ -24,7 +24,7 @@ public class ClientThread implements Runnable {
 			while(true) {
 				String request = this.getValidRequest();
 				if( !request.equals("") && request.length() > 0) {
-					System.out.println("req " + request);
+					System.out.println(System.currentTimeMillis() + " req " + request);
 					o.println("HTTP/1.1 200 OK");
 					o.println("Connection:keep-alive");
 					o.println("Server: TimeServer");
@@ -43,6 +43,7 @@ public class ClientThread implements Runnable {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} finally {
+			System.out.println("connection closed");
 			this.close();
 		}
 	}
@@ -50,11 +51,9 @@ public class ClientThread implements Runnable {
 	private String getValidRequest() throws InterruptedException, IOException {
 		StringBuilder request = new StringBuilder();
 		byte[] buff = new byte[16];
-		while (i.read(buff) == 16) {
-			i.read(buff);
+		while (i.read(buff) > 0 && i.available() != 0) {
 			request.append(Arrays.toString(buff));
 		}
-		request.append(buff);
 		return request.toString();
 	}
 

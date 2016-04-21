@@ -107,11 +107,12 @@ public class Connection implements NIOHandler {
 		if (response == null) {
 			response = new Response();
 		}
-		ByteBuffer buffer = ByteBuffer.allocate(1024 * 64);
+		ByteBuffer buffer = ByteBuffer.allocate(1024 * 4);
 		try {
 			int len = 0;
 			while((len = channel.read(buffer)) > 0) {
 				buffer.flip();
+				System.out.println(new String(buffer.array()));
 				response.parse(buffer.array(), len);
 				buffer.clear();
 			}
@@ -122,6 +123,8 @@ public class Connection implements NIOHandler {
 		} finally {
 			if (response.finish()) {
 				futureFinish();
+			} else if (sk.isValid()) {
+				selector.register(channel, SelectionKey.OP_READ, this);
 			}
 		}
 	}

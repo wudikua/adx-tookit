@@ -191,12 +191,15 @@ public class MultiThreadSelector implements Runnable {
 						logger.debug("key op {}", sk.readyOps());
 						handler = (NIOHandler) sk.attachment();
 						if (sk.isConnectable()) {
+							System.out.println("connect time " + System.currentTimeMillis());
 							reactor.submit(new ConnectTask(handler, sk));
 							sk.cancel();
 						} else if (sk.isWritable()) {
+							System.out.println("write time " + System.currentTimeMillis());
 							reactor.submit(new WriteTask(handler, sk));
 							sk.cancel();
 						} else if (sk.isReadable()) {
+							System.out.println("read time " + System.currentTimeMillis());
 							reactor.submit(new ReadTask(handler, sk));
 							sk.cancel();
 						} else {
