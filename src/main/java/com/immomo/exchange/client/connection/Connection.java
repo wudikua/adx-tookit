@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -56,6 +58,9 @@ public class Connection implements NIOHandler {
 			return true;
 		}
 		channel = SocketChannel.open();
+		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+		channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
 		channel.configureBlocking(false);
 		int port = url.getPort();
 		if (port <= 0) {
@@ -112,18 +117,20 @@ public class Connection implements NIOHandler {
 			int len = 0;
 			while((len = channel.read(buffer)) > 0) {
 				buffer.flip();
-				System.out.println(new String(buffer.array()));
+//				System.out.println(new String(buffer.array()));
 				response.parse(buffer.array(), len);
 				buffer.clear();
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			logger.error("read error, close connection", e);
 			sk.cancel();
 			close();
 		} finally {
 			if (response.finish()) {
 				futureFinish();
-			} else if (sk.isValid()) {
+			} else if (!closed) {
+				// 还有数据需要读取
 				selector.register(channel, SelectionKey.OP_READ, this);
 			}
 		}

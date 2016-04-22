@@ -1,16 +1,44 @@
 package com.immomo.exchange.client.util;
 
 import com.google.common.collect.*;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by wudikua on 2016/4/10.
  */
 public class Timer {
 
+	private final static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+	private static final long tickUnit = Long.parseLong(System.getProperty("notify.systimer.tick", "20"));
+	private static volatile long time = System.currentTimeMillis();
+
+	private static class TimerTicker implements Runnable {
+		public void run() {
+			time = System.currentTimeMillis();
+		}
+	}
+
+	public static long currentTimeMillis() {
+		return time;
+	}
+
+	static {
+		executor.scheduleAtFixedRate(new TimerTicker(), tickUnit, tickUnit, TimeUnit.MILLISECONDS); Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				executor.shutdown();
+			}
+		});
+	}
+
 	public static abstract class TimerUnit implements Comparable {
 		public long deadline;
 
 		public TimerUnit(long timeout) {
-			this.deadline = System.currentTimeMillis() + timeout;
+			this.deadline = Timer.currentTimeMillis() + timeout;
 		}
 
 		public abstract void onTime() throws Exception;
@@ -44,7 +72,7 @@ public class Timer {
 	}
 
 	private static void schedule() {
-		long now = System.currentTimeMillis();
+		long now = Timer.currentTimeMillis();
 		long deadline = 0;
 		while (timers.keySet().size() > 0 && (deadline = timers.keySet().first()) <= now) {
 			for (TimerUnit timer : timers.get(deadline)) {

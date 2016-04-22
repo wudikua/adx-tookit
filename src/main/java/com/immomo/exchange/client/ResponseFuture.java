@@ -41,9 +41,11 @@ public class ResponseFuture implements Future<Response> {
 	}
 
 	public Response get() throws InterruptedException, ExecutionException {
+		System.out.println("get beign " + System.currentTimeMillis());
 		synchronized (connection.notify) {
 			connection.notify.wait();
 		}
+		System.out.println("get end " + System.currentTimeMillis());
 		done = true;
 		Response response =  connection.getResponse();
 		if (response == null) {
@@ -58,12 +60,18 @@ public class ResponseFuture implements Future<Response> {
 	}
 
 	public Response get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+		if (unit == null) {
+			throw new InterruptedException("unit is null");
+		}
 		Timer.addTimeout(new Timer.TimerUnit(unit.toMillis(timeout)) {
 			@Override
 			public void onTime() throws Exception {
+				Long begin = System.currentTimeMillis();
 				synchronized (connection.notify) {
 					connection.notify.notifyAll();
 				}
+				Long end = System.currentTimeMillis();
+				System.out.println("timeout notify use " + (end - begin));
 			}
 		});
 		return get();

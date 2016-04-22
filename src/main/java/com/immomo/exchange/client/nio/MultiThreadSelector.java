@@ -19,6 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by wudikua on 2016/4/4.
@@ -36,6 +37,8 @@ public class MultiThreadSelector implements Runnable {
 	private int count;
 
 	private boolean started = false;
+
+	private AtomicBoolean wakenUp = new AtomicBoolean();
 
 	public MultiThreadSelector(int count) {
 		this.count = count;
@@ -66,7 +69,9 @@ public class MultiThreadSelector implements Runnable {
 			pending.add(new ChangeEvent(channel, connection, op));
 		}
 		logger.debug("add pending queue {}", pending.size());
-		selector.wakeup();
+		if (wakenUp.compareAndSet(false, true)) {
+			selector.wakeup();
+		}
 	}
 
 	private void changeEvent() {
@@ -79,8 +84,12 @@ public class MultiThreadSelector implements Runnable {
 				it.remove();
 				logger.debug("changEvent {}", e.getConnection());
 				try {
-					e.getChannel().register(selector, e.getOp(), e.getConnection());
-				} catch (ClosedChannelException  ex) {
+					if (e.getOp() != 0) {
+						e.getChannel().register(selector, e.getOp(), e.getConnection());
+					} else {
+						logger.error("register is 0");
+					}
+				} catch (Exception  ex) {
 					ex.printStackTrace();
 					e.getConnection().close();
 				}
@@ -171,6 +180,7 @@ public class MultiThreadSelector implements Runnable {
 			changeEvent();
 			int select = 0;
 			try {
+				wakenUp.set(false);
 				select = selector.select();
 			} catch (IOException e) {
 				e.printStackTrace();

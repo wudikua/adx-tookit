@@ -15,7 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ClientTest {
 
-	private static final String url = "http://127.0.0.1:8880";
+//	private static final String url = "http://127.0.0.1:8880";
+	private static final String url = "http://m.baidu.com";
 
 	private static Client client;
 
@@ -80,6 +81,7 @@ public class ClientTest {
 							Future f = ThirdHttpClient.client.prepareGet(url).execute();
 							com.ning.http.client.Response r = ThirdHttpClient.waitResponse(f, 3000);
 							if (r.getStatusCode() == 200) {
+								System.out.println("thread " + Thread.currentThread() + " success");
 								success.incrementAndGet();
 							}
 							if (success.get() % 5 == 0) {
@@ -111,15 +113,15 @@ public class ClientTest {
 					for (int j =0; j<10; j++) {
 						try {
 							Future<Response> future = client.get(url);
-							Response resp = future.get(3000, TimeUnit.MILLISECONDS);
+							Response resp = future.get();
 							if (resp.getStatus() == 200) {
 								success.incrementAndGet();
-								System.out.println(new String(resp.getBody()));
+//								System.out.println(new String(resp.getBody()));
 							}
 						} catch (Exception e) {
 
 						}
-						if (success.get()%5 == 0) {
+						if (success.get()%2 == 0) {
 							System.out.println("thread " + Thread.currentThread() + " " + success.get());
 						}
 					}
