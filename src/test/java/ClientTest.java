@@ -102,7 +102,7 @@ public class ClientTest {
 
 	@Test
 	public void ab() throws InterruptedException {
-		int N = 2;
+		int N = 10;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);

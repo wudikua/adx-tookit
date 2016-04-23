@@ -39,7 +39,7 @@ public class Client {
 			conn = new Connection(parsed, selector);
 			logger.info("new connection {}", conn.hashCode());
 		} else {
-			logger.debug("get connection {} from pool", conn.hashCode());
+			logger.info("get connection {} from pool", conn.hashCode());
 		}
 		return conn;
 	}

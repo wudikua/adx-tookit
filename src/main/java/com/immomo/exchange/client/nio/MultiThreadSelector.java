@@ -87,7 +87,7 @@ public class MultiThreadSelector implements Runnable {
 					if (!e.getChannel().isRegistered()) {
 						e.getChannel().register(selector, e.getOp(), e.getConnection());
 					} else {
-						logger.error("channel is registered");
+						logger.error("channel {} is registered", e.getConnection().hashCode());
 						System.exit(0);
 						e.getConnection().close();
 					}
@@ -203,17 +203,17 @@ public class MultiThreadSelector implements Runnable {
 						logger.debug("key op {}", sk.readyOps());
 						handler = (NIOHandler) sk.attachment();
 						if (sk.isConnectable()) {
+							sk.cancel();
 							logger.debug("connect time {}", System.currentTimeMillis());
 							reactor.submit(new ConnectTask(handler, sk));
-							sk.cancel();
 						} else if (sk.isWritable()) {
+							sk.cancel();
 							logger.debug("write time {}", System.currentTimeMillis());
 							reactor.submit(new WriteTask(handler, sk));
-							sk.cancel();
 						} else if (sk.isReadable()) {
+							sk.cancel();
 							logger.debug("read time {}", System.currentTimeMillis());
 							reactor.submit(new ReadTask(handler, sk));
-							sk.cancel();
 						} else {
 							sk.cancel();
 						}
