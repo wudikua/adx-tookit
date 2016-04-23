@@ -68,7 +68,7 @@ public class ClientTest {
 
 	@Test
 	public void abNing() throws InterruptedException {
-		int N = 300;
+		int N = 10;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
@@ -76,7 +76,7 @@ public class ClientTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<2; j++) {
+					for (int j =0; j<10; j++) {
 						try {
 							Future f = ThirdHttpClient.client.prepareGet(url).execute();
 							com.ning.http.client.Response r = ThirdHttpClient.waitResponse(f, 3000);
@@ -102,7 +102,7 @@ public class ClientTest {
 
 	@Test
 	public void ab() throws InterruptedException {
-		int N = 1;
+		int N = 2;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
@@ -113,7 +113,7 @@ public class ClientTest {
 					for (int j =0; j<10; j++) {
 						try {
 							Future<Response> future = client.get(url);
-							Response resp = future.get();
+							Response resp = future.get(3000, TimeUnit.MILLISECONDS);
 							if (resp.getStatus() == 200) {
 								success.incrementAndGet();
 //								System.out.println(new String(resp.getBody()));
@@ -121,7 +121,7 @@ public class ClientTest {
 						} catch (Exception e) {
 
 						}
-						if (success.get()%2 == 0) {
+						if (success.get()%5 == 0) {
 							System.out.println("thread " + Thread.currentThread() + " " + success.get());
 						}
 					}
@@ -132,6 +132,15 @@ public class ClientTest {
 		finish.await();
 		Long end = System.currentTimeMillis();
 		System.out.println("time total use " + (end - begin) + " request " + N + " success " + success.get());
+	}
+
+	@Test
+	public void testTimePerformance() {
+		Long b = System.currentTimeMillis();
+		for (int i=0; i<100000; i++) {
+			System.currentTimeMillis();
+		}
+		System.out.println((System.currentTimeMillis() - b));
 	}
 
 	@Test

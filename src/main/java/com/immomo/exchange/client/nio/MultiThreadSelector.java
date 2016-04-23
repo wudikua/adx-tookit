@@ -58,7 +58,7 @@ public class MultiThreadSelector implements Runnable {
 
 	public void start() {
 		for (int i=0; i<count; i++) {
-			new Thread(new MultiThreadSelector(count)).start();
+			new Thread(this).start();
 		}
 	}
 
@@ -84,10 +84,12 @@ public class MultiThreadSelector implements Runnable {
 				it.remove();
 				logger.debug("changEvent {}", e.getConnection());
 				try {
-					if (e.getOp() != 0) {
+					if (!e.getChannel().isRegistered()) {
 						e.getChannel().register(selector, e.getOp(), e.getConnection());
 					} else {
-						logger.error("register is 0");
+						logger.error("channel is registered");
+						System.exit(0);
+						e.getConnection().close();
 					}
 				} catch (Exception  ex) {
 					ex.printStackTrace();
@@ -153,7 +155,7 @@ public class MultiThreadSelector implements Runnable {
 		}
 	}
 
-	private class WriteTask extends NIOTask {
+		private class WriteTask extends NIOTask {
 
 		private WriteTask(NIOHandler handler, SelectionKey sk) {
 			super(handler, sk);
@@ -201,15 +203,15 @@ public class MultiThreadSelector implements Runnable {
 						logger.debug("key op {}", sk.readyOps());
 						handler = (NIOHandler) sk.attachment();
 						if (sk.isConnectable()) {
-							System.out.println("connect time " + System.currentTimeMillis());
+							logger.debug("connect time {}", System.currentTimeMillis());
 							reactor.submit(new ConnectTask(handler, sk));
 							sk.cancel();
 						} else if (sk.isWritable()) {
-							System.out.println("write time " + System.currentTimeMillis());
+							logger.debug("write time {}", System.currentTimeMillis());
 							reactor.submit(new WriteTask(handler, sk));
 							sk.cancel();
 						} else if (sk.isReadable()) {
-							System.out.println("read time " + System.currentTimeMillis());
+							logger.debug("read time {}", System.currentTimeMillis());
 							reactor.submit(new ReadTask(handler, sk));
 							sk.cancel();
 						} else {

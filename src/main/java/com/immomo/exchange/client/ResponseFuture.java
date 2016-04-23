@@ -3,6 +3,8 @@ package com.immomo.exchange.client;
 import com.immomo.exchange.client.connection.Connection;
 import com.immomo.exchange.client.protocal.Response;
 import com.immomo.exchange.client.util.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -13,6 +15,8 @@ import java.util.concurrent.TimeoutException;
  * Created by wudikua on 2016/4/9.
  */
 public class ResponseFuture implements Future<Response> {
+
+	private static final Logger logger = LoggerFactory.getLogger(ResponseFuture.class);
 
 	private Connection connection;
 
@@ -41,11 +45,11 @@ public class ResponseFuture implements Future<Response> {
 	}
 
 	public Response get() throws InterruptedException, ExecutionException {
-		System.out.println("get beign " + System.currentTimeMillis());
+		logger.debug("get begin {}", System.currentTimeMillis());
 		synchronized (connection.notify) {
 			connection.notify.wait();
 		}
-		System.out.println("get end " + System.currentTimeMillis());
+		logger.debug("get end {}", System.currentTimeMillis());
 		done = true;
 		Response response =  connection.getResponse();
 		if (response == null) {
