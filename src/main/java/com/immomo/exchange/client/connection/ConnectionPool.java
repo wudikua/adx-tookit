@@ -1,10 +1,14 @@
 package com.immomo.exchange.client.connection;
 
 import com.google.common.collect.Maps;
+import com.immomo.exchange.client.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * Created by mengjun on 16/4/1.
@@ -15,7 +19,22 @@ public class ConnectionPool {
 
 	private Map<String, LinkedList<Connection>> free;
 
+	private BlockingQueue<Connection> closing = new ArrayBlockingQueue<Connection>(Config.maxConnections);
+
+	private class ConnectionPoolCleaner implements Runnable {
+
+		@Override
+		public void run() {
+			while (true) {
+				Connection c = closing.poll();
+				c.close();
+			}
+		}
+	}
+
 	public ConnectionPool() {
+		// 清理线程
+		new Thread(new ConnectionPoolCleaner()).start();
 		this.free = Maps.newConcurrentMap();
 	}
 
@@ -30,7 +49,15 @@ public class ConnectionPool {
 				if (conns == null || conns.size() == 0) {
 					return null;
 				}
-				Connection first = conns.removeFirst();
+				Connection first;
+				long now = System.currentTimeMillis();
+				while ((first = conns.removeFirst()) != null) {
+					if (first.getCreateTime() + Config.maxConnectionTime > now ||
+							first.getLastActiveTime() + Config.connectionExpireTime < now) {
+						// expire
+						closing.add(first);
+					}
+				}
 				return first;
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -45,6 +72,7 @@ public class ConnectionPool {
 				free.put(conn.getCacheKey(), new LinkedList<Connection>());
 			}
 			logger.debug("return connection {}", conn.hashCode());
+			conn.updateActiveTime();
 	 		free.get(conn.getCacheKey()).addLast(conn);
 		}
 	}

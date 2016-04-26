@@ -39,6 +39,10 @@ public class Connection implements NIOHandler {
 
 	private String cacheKey;
 
+	private long lastActiveTime = System.currentTimeMillis();
+
+	private long createTime = System.currentTimeMillis();
+
 	@Override
 	public String toString() {
 		return "Connection{" +
@@ -164,5 +168,17 @@ public class Connection implements NIOHandler {
 
 	public String getCacheKey() {
 		return cacheKey;
+	}
+
+	public void updateActiveTime() {
+		lastActiveTime = System.currentTimeMillis();
+	}
+
+	public long getLastActiveTime() {
+		return lastActiveTime;
+	}
+
+	public long getCreateTime() {
+		return createTime;
 	}
 }

@@ -88,7 +88,6 @@ public class MultiThreadSelector implements Runnable {
 						e.getChannel().register(selector, e.getOp(), e.getConnection());
 					} else {
 						logger.error("channel {} is registered", e.getConnection().hashCode());
-						System.exit(0);
 						e.getConnection().close();
 					}
 				} catch (Exception  ex) {
@@ -99,83 +98,6 @@ public class MultiThreadSelector implements Runnable {
 		}
 	}
 
-	private abstract class NIOTask implements Runnable {
-
-		protected NIOHandler handler;
-
-		protected SelectionKey sk;
-
-		private NIOTask(NIOHandler handler, SelectionKey sk) {
-			this.handler = handler;
-			this.sk = sk;
-		}
-	}
-
-	private class ConnectTask extends NIOTask {
-
-		private ConnectTask(NIOHandler handler, SelectionKey sk) {
-			super(handler, sk);
-		}
-
-		@Override
-		public void run() {
-			try {
-				handler.connect(sk);
-			} catch (Exception e) {
-				if (handler != null) {
-					handler.close();
-				}
-				if (sk != null) {
-					sk.cancel();
-				}
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private class ReadTask extends NIOTask {
-
-		private ReadTask(NIOHandler handler, SelectionKey sk) {
-			super(handler, sk);
-		}
-
-		@Override
-		public void run() {
-			try {
-				handler.read(sk);
-			} catch (Exception e) {
-				if (handler != null) {
-					handler.close();
-				}
-				if (sk != null) {
-					sk.cancel();
-				}
-				e.printStackTrace();
-			}
-		}
-	}
-
-		private class WriteTask extends NIOTask {
-
-		private WriteTask(NIOHandler handler, SelectionKey sk) {
-			super(handler, sk);
-		}
-
-		@Override
-		public void run() {
-			try {
-				handler.write(sk);
-			} catch (Exception e) {
-				if (handler != null) {
-					handler.close();
-				}
-				if (sk != null) {
-					sk.cancel();
-				}
-				e.printStackTrace();
-			}
-		}
-	}
 
 	public void run() {
 		while(true) {
