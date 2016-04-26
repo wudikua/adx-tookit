@@ -89,6 +89,7 @@ public class MultiThreadSelector implements Runnable {
 					} else {
 						logger.error("channel {} is registered", e.getConnection().hashCode());
 						e.getConnection().close();
+						System.exit(0);
 					}
 				} catch (Exception  ex) {
 					ex.printStackTrace();
