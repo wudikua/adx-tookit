@@ -37,9 +37,9 @@ public class Client {
 		Connection conn = pool.get(cacheKey);
 		if (conn == null) {
 			conn = new Connection(parsed, selector);
-			logger.info("{} new connection {}", Thread.currentThread().getName(), conn.hashCode());
+			logger.debug("{} new connection {}", Thread.currentThread().getName(), conn.hashCode());
 		} else {
-			logger.info("{} get connection {} from pool", Thread.currentThread().getName(), conn.hashCode());
+			logger.debug("{} get connection {} from pool", Thread.currentThread().getName(), conn.hashCode());
 		}
 		return conn;
 	}

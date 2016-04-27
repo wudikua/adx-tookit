@@ -81,15 +81,13 @@ public class MultiThreadSelector implements Runnable {
 			Iterator<NIOEvent> it = pending.iterator();
 			while(it.hasNext()) {
 				NIOEvent e = it.next();
-				it.remove();
 				logger.debug("changEvent {}", e.getConnection());
 				try {
 					if (!e.getChannel().isRegistered()) {
 						e.getChannel().register(selector, e.getOp(), e.getConnection());
+						it.remove();
 					} else {
-						logger.error("channel {} is registered", e.getConnection().hashCode());
-						e.getConnection().close();
-						System.exit(0);
+						logger.error("channel {} is registered because cancel not done, wait register for next term", e.getConnection().hashCode());
 					}
 				} catch (Exception  ex) {
 					ex.printStackTrace();
@@ -128,7 +126,8 @@ public class MultiThreadSelector implements Runnable {
 						if (sk.isConnectable()) {
 							sk.cancel();
 							logger.debug("connect time {}", System.currentTimeMillis());
-							reactor.submit(new ConnectTask(handler, sk));
+							handler.connect(sk);
+//							reactor.submit(new ConnectTask(handler, sk));
 						} else if (sk.isWritable()) {
 							sk.cancel();
 							logger.debug("write time {}", System.currentTimeMillis());

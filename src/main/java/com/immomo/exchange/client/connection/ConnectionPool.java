@@ -60,7 +60,7 @@ public class ConnectionPool {
 			Connection first = null;
 			long now = System.currentTimeMillis();
 			while ((first = conns.poll()) != null) {
-				if (first.getCreateTime() + Config.maxConnectionTime > now ||
+				if (first.getCreateTime() + Config.maxConnectionTime < now ||
 						first.getLastActiveTime() + Config.connectionExpireTime < now) {
 					// expire
 					closing.add(first);
@@ -78,7 +78,7 @@ public class ConnectionPool {
 		if (!free.containsKey(conn.getCacheKey())) {
 			free.put(conn.getCacheKey(), new ConcurrentLinkedQueue<Connection>());
 		}
-		logger.info("return connection {}", conn.hashCode());
+		logger.debug("return connection {}", conn.hashCode());
 		conn.updateActiveTime();
 		free.get(conn.getCacheKey()).add(conn);
 	}

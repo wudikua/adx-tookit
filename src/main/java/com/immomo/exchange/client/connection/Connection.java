@@ -153,7 +153,9 @@ public class Connection implements NIOHandler {
 		}
 		try {
 			futureFinish();
-			channel.close();
+			if (channel != null) {
+				channel.close();
+			}
 			closed = true;
 		} catch (IOException e) {
 			logger.error("close error", e);

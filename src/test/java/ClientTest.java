@@ -68,7 +68,7 @@ public class ClientTest {
 
 	@Test
 	public void abNing() throws InterruptedException {
-		int N = 10;
+		int N = 50;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
@@ -102,7 +102,7 @@ public class ClientTest {
 
 	@Test
 	public void ab() throws InterruptedException {
-		int N = 10;
+		int N = 50;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
