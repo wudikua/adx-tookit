@@ -1,6 +1,6 @@
 package com.immomo.exchange.client.connection;
 
-import com.immomo.exchange.client.nio.MultiThreadSelector;
+import com.immomo.exchange.client.nio.SingleThreadSelector;
 import com.immomo.exchange.client.protocal.Request;
 import com.immomo.exchange.client.protocal.Response;
 import org.slf4j.Logger;
@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -25,11 +24,11 @@ public class Connection implements NIOHandler {
 
 	private SocketChannel channel;
 
-	private MultiThreadSelector selector;
+	private SingleThreadSelector selector;
 
 	private URL url;
 
-	private boolean closed = false;
+	private volatile boolean closed = false;
 
 	private boolean connected = false;
 
@@ -50,7 +49,7 @@ public class Connection implements NIOHandler {
 				'}';
 	}
 
-	public Connection(URL url, MultiThreadSelector selector) {
+	public Connection(URL url, SingleThreadSelector selector) {
 		this.url = url;
 		this.selector = selector;
 		this.cacheKey = ConnectionPool.getKey(url.getHost(), url.getPort());
@@ -58,7 +57,7 @@ public class Connection implements NIOHandler {
 
 	public boolean prepareConnect() throws IOException {
 		if (connected) {
-			selector.register(channel, SelectionKey.OP_WRITE, this);
+			selector.register(channel, SelectionKey.OP_WRITE, this, null);
 			return true;
 		}
 		channel = SocketChannel.open();
@@ -71,7 +70,7 @@ public class Connection implements NIOHandler {
 			port = 80;
 		}
 		channel.connect(new InetSocketAddress(url.getHost(), port));
-		selector.register(channel, SelectionKey.OP_CONNECT, this);
+		selector.register(channel, SelectionKey.OP_CONNECT, this, null);
 		return true;
 	}
 
@@ -82,7 +81,7 @@ public class Connection implements NIOHandler {
 		}
 		if (!connected) {
 			connected = channel.finishConnect();
-			selector.register(channel, SelectionKey.OP_WRITE, this);
+			selector.register(channel, SelectionKey.OP_WRITE, this, sk);
 		}
 		return connected;
 	}
@@ -96,6 +95,11 @@ public class Connection implements NIOHandler {
 		ByteBuffer buffer = ByteBuffer.wrap(Request.buildRequest(url));
 		while (buffer.hasRemaining()) {
 			try {
+				if (closed) {
+					// 防止hasRemaining死循环
+					sk.cancel();
+					return;
+				}
 				channel.write(buffer);
 			} catch (IOException e) {
 				logger.error("write error, close connection", e);
@@ -104,7 +108,7 @@ public class Connection implements NIOHandler {
 				return;
 			}
 		}
-		selector.register(channel, SelectionKey.OP_READ, this);
+		selector.register(channel, SelectionKey.OP_READ, this, sk);
 	}
 
 	@Override
@@ -116,12 +120,11 @@ public class Connection implements NIOHandler {
 		if (response == null) {
 			response = new Response();
 		}
-		ByteBuffer buffer = ByteBuffer.allocate(1024 * 4);
+		ByteBuffer buffer = ByteBuffer.allocate(1024*4);
 		try {
-			int len = 0;
+			int len;
 			while((len = channel.read(buffer)) > 0) {
 				buffer.flip();
-//				System.out.println(new String(buffer.array()));
 				response.parse(buffer.array(), len);
 				buffer.clear();
 			}
@@ -133,9 +136,11 @@ public class Connection implements NIOHandler {
 		} finally {
 			if (response.finish()) {
 				futureFinish();
+				// 不再继续监听读写事件了
+				sk.cancel();
 			} else if (!closed) {
 				// 还有数据需要读取
-				selector.register(channel, SelectionKey.OP_READ, this);
+				selector.register(channel, SelectionKey.OP_READ, this, sk);
 			}
 		}
 	}

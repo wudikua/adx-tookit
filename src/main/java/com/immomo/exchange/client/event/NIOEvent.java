@@ -2,6 +2,7 @@ package com.immomo.exchange.client.event;
 
 import com.immomo.exchange.client.connection.Connection;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -12,4 +13,5 @@ public interface NIOEvent {
 	public SocketChannel getChannel();
 	public Connection getConnection();
 	public int getOp();
+	public SelectionKey getSelectionKey();
 }

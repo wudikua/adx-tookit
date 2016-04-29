@@ -5,28 +5,25 @@ import com.immomo.exchange.client.connection.NIOHandler;
 import com.immomo.exchange.client.event.ChangeEvent;
 import com.immomo.exchange.client.event.ConnectEvent;
 import com.immomo.exchange.client.event.NIOEvent;
-import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by wudikua on 2016/4/4.
  */
-public class MultiThreadSelector implements Runnable {
+public class SingleThreadSelector implements Runnable {
 
-	private static final Logger logger = LoggerFactory.getLogger(MultiThreadSelector.class);
+	private static final Logger logger = LoggerFactory.getLogger(SingleThreadSelector.class);
 
 	private static Selector selector;
 
@@ -34,14 +31,14 @@ public class MultiThreadSelector implements Runnable {
 
 	private ExecutorService reactor = Executors.newFixedThreadPool(10);
 
-	private int count;
-
 	private boolean started = false;
 
 	private AtomicBoolean wakenUp = new AtomicBoolean();
 
-	public MultiThreadSelector(int count) {
-		this.count = count;
+	private int selectZeroCount = 0;
+	private int maxZeroCount = 20;
+
+	public SingleThreadSelector() {
 	}
 
 	public Selector getSelector() {
@@ -57,16 +54,14 @@ public class MultiThreadSelector implements Runnable {
 	}
 
 	public void start() {
-		for (int i=0; i<count; i++) {
-			new Thread(this).start();
-		}
+		new Thread(this).start();
 	}
 
-	public void register(SocketChannel channel, int op, Connection connection) {
+	public void register(SocketChannel channel, int op, Connection connection, SelectionKey sk) {
 		if (SelectionKey.OP_CONNECT == op) {
-			pending.add(new ConnectEvent(channel, connection, op));
+			pending.add(new ConnectEvent(channel, connection, op, sk));
 		} else {
-			pending.add(new ChangeEvent(channel, connection, op));
+			pending.add(new ChangeEvent(channel, connection, op, sk));
 		}
 		logger.debug("add pending queue {}", pending.size());
 		if (wakenUp.compareAndSet(false, true)) {
@@ -76,7 +71,7 @@ public class MultiThreadSelector implements Runnable {
 
 	private void changeEvent() {
 		logger.debug("check pending size is {}", pending.size());
-		if (pending.size() > 0) {
+		if (!pending.isEmpty()) {
 			logger.debug("something is to be register");
 			Iterator<NIOEvent> it = pending.iterator();
 			while(it.hasNext()) {
@@ -87,7 +82,8 @@ public class MultiThreadSelector implements Runnable {
 						e.getChannel().register(selector, e.getOp(), e.getConnection());
 						it.remove();
 					} else {
-						logger.error("channel {} is registered because cancel not done, wait register for next term", e.getConnection().hashCode());
+						e.getSelectionKey().interestOps(e.getOp());
+						it.remove();
 					}
 				} catch (Exception  ex) {
 					ex.printStackTrace();
@@ -111,6 +107,7 @@ public class MultiThreadSelector implements Runnable {
 			}
 			logger.debug("select is {}", select);
 			if (select > 0) {
+				selectZeroCount = 0;
 				Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 				while (it.hasNext()) {
 					NIOHandler handler = null;
@@ -124,16 +121,15 @@ public class MultiThreadSelector implements Runnable {
 						logger.debug("key op {}", sk.readyOps());
 						handler = (NIOHandler) sk.attachment();
 						if (sk.isConnectable()) {
-							sk.cancel();
+							sk.interestOps(sk.interestOps() & (~SelectionKey.OP_CONNECT));
 							logger.debug("connect time {}", System.currentTimeMillis());
-							handler.connect(sk);
-//							reactor.submit(new ConnectTask(handler, sk));
+							reactor.submit(new ConnectTask(handler, sk));
 						} else if (sk.isWritable()) {
-							sk.cancel();
+							sk.interestOps(sk.interestOps() & (~SelectionKey.OP_WRITE));
 							logger.debug("write time {}", System.currentTimeMillis());
 							reactor.submit(new WriteTask(handler, sk));
 						} else if (sk.isReadable()) {
-							sk.cancel();
+							sk.interestOps(sk.interestOps() & (~SelectionKey.OP_READ));
 							logger.debug("read time {}", System.currentTimeMillis());
 							reactor.submit(new ReadTask(handler, sk));
 						} else {

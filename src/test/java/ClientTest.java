@@ -1,6 +1,6 @@
 import com.immomo.exchange.client.Client;
 import com.immomo.exchange.client.ThirdHttpClient;
-import com.immomo.exchange.client.nio.MultiThreadSelector;
+import com.immomo.exchange.client.nio.SingleThreadSelector;
 import com.immomo.exchange.client.protocal.Response;
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ public class ClientTest {
 	private static Client client;
 
 	static {
-		MultiThreadSelector selector = new MultiThreadSelector(1);
+		SingleThreadSelector selector = new SingleThreadSelector();
 		try {
 			selector.init();
 			selector.start();
@@ -145,7 +145,7 @@ public class ClientTest {
 
 	@Test
 	public void get() throws Exception {
-		for (int i=0; i<1; i++) {
+		for (int i=0; i<10; i++) {
 			new Thread(new Runnable() {
 				public void run() {
 					for (int i = 0; i < 1; i++) {

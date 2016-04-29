@@ -2,8 +2,8 @@ package com.immomo.exchange.client;
 
 import com.immomo.exchange.client.connection.Connection;
 import com.immomo.exchange.client.connection.ConnectionPool;
+import com.immomo.exchange.client.nio.SingleThreadSelector;
 import com.immomo.exchange.client.protocal.Response;
-import com.immomo.exchange.client.nio.MultiThreadSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,9 +19,9 @@ public class Client {
 
 	public static ConnectionPool pool = new ConnectionPool();
 
-	private MultiThreadSelector selector;
+	private SingleThreadSelector selector;
 
-	public Client(MultiThreadSelector selector) {
+	public Client(SingleThreadSelector selector) {
 		this.selector = selector;
 	}
 
