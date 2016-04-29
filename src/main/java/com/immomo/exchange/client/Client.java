@@ -1,5 +1,6 @@
 package com.immomo.exchange.client;
 
+import com.google.common.collect.Lists;
 import com.immomo.exchange.client.connection.Connection;
 import com.immomo.exchange.client.connection.ConnectionPool;
 import com.immomo.exchange.client.nio.SingleThreadSelector;
@@ -8,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Future;
 
 /**
@@ -19,10 +22,20 @@ public class Client {
 
 	public static ConnectionPool pool = new ConnectionPool();
 
-	private SingleThreadSelector selector;
+	private List<SingleThreadSelector> selector;
+
+	private int ioThreads;
+
+	private Random r = new Random();
 
 	public Client(SingleThreadSelector selector) {
+		this.selector = Lists.newArrayList(selector);
+		ioThreads = 1;
+	}
+
+	public Client(List<SingleThreadSelector> selector) {
 		this.selector = selector;
+		ioThreads = selector.size();
 	}
 
 	public Future<Response> get(String url) throws Exception {
@@ -36,7 +49,8 @@ public class Client {
 		String cacheKey = ConnectionPool.getKey(parsed.getHost(), parsed.getPort());
 		Connection conn = pool.get(cacheKey);
 		if (conn == null) {
-			conn = new Connection(parsed, selector);
+			int ioThread = r.nextInt(ioThreads);
+			conn = new Connection(parsed, selector.get(ioThread));
 			logger.debug("{} new connection {}", Thread.currentThread().getName(), conn.hashCode());
 		} else {
 			logger.debug("{} get connection {} from pool", Thread.currentThread().getName(), conn.hashCode());

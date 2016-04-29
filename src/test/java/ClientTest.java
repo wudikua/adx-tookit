@@ -1,3 +1,4 @@
+import com.google.common.collect.Lists;
 import com.immomo.exchange.client.Client;
 import com.immomo.exchange.client.ThirdHttpClient;
 import com.immomo.exchange.client.nio.SingleThreadSelector;
@@ -5,6 +6,7 @@ import com.immomo.exchange.client.protocal.Response;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -21,11 +23,15 @@ public class ClientTest {
 	private static Client client;
 
 	static {
-		SingleThreadSelector selector = new SingleThreadSelector();
+		List<SingleThreadSelector> selectors = Lists.newArrayList();
 		try {
-			selector.init();
-			selector.start();
-			client = new Client(selector);
+			for (int i=0;i<4;i++) {
+				SingleThreadSelector selector = new SingleThreadSelector();
+				selector.init();
+				selector.start();
+				selectors.add(selector);
+			}
+			client = new Client(selectors);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -68,7 +74,7 @@ public class ClientTest {
 
 	@Test
 	public void abNing() throws InterruptedException {
-		int N = 50;
+		int N = 100;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
@@ -76,7 +82,7 @@ public class ClientTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<10; j++) {
+					for (int j =0; j<3; j++) {
 						try {
 							Future f = ThirdHttpClient.client.prepareGet(url).execute();
 							com.ning.http.client.Response r = ThirdHttpClient.waitResponse(f, 3000);
@@ -102,7 +108,7 @@ public class ClientTest {
 
 	@Test
 	public void ab() throws InterruptedException {
-		int N = 50;
+		int N = 100;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
@@ -110,7 +116,7 @@ public class ClientTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<10; j++) {
+					for (int j =0; j<3; j++) {
 						try {
 							Future<Response> future = client.get(url);
 							Response resp = future.get(3000, TimeUnit.MILLISECONDS);

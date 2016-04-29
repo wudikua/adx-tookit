@@ -25,11 +25,11 @@ public class SingleThreadSelector implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(SingleThreadSelector.class);
 
-	private static Selector selector;
+	private Selector selector;
 
-	private static Queue<NIOEvent> pending = new ConcurrentLinkedQueue<NIOEvent>();
+	private Queue<NIOEvent> pending = new ConcurrentLinkedQueue<NIOEvent>();
 
-	private ExecutorService reactor = Executors.newFixedThreadPool(10);
+	private ExecutorService reactor = Executors.newFixedThreadPool(100);
 
 	private boolean started = false;
 
