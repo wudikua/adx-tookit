@@ -90,8 +90,7 @@ public class Connection implements NIOHandler {
 	}
 
 	@Override
-	public void write(SelectionKey sk) {
-		this.sk = sk;
+	public void write() {
 		if (closed) {
 			sk.cancel();
 			return;
@@ -105,7 +104,10 @@ public class Connection implements NIOHandler {
 					sk.cancel();
 					return;
 				}
-				channel.write(buffer);
+				if (channel.write(buffer) < 0) {
+					// broken pipe?
+					throw new IOException("write return less than 0");
+				}
 			} catch (IOException e) {
 				logger.error("write error, close connection", e);
 				sk.cancel();
@@ -117,8 +119,7 @@ public class Connection implements NIOHandler {
 	}
 
 	@Override
-	public void read(SelectionKey sk) {
-		this.sk = sk;
+	public void read() {
 		if (closed) {
 			sk.cancel();
 			return;
@@ -147,8 +148,20 @@ public class Connection implements NIOHandler {
 				selector.register(channel, SelectionKey.OP_READ, this, sk);
 			} else if (!closed) {
 				// 还有数据需要读取
-				selector.register(channel, SelectionKey.OP_READ, this, sk);
+				try {
+					// 当服务端主动关闭连接以后，客户端如果不判断available会一直read 0字节
+					if (channel.socket().getInputStream().available() > 0) {
+						selector.register(channel, SelectionKey.OP_READ, this, sk);
+					} else {
+						sk.cancel();
+						close();
+					}
+				} catch (IOException e) {
+					sk.cancel();
+					e.printStackTrace();
+				}
 			} else {
+				// future已经超时，不继续监听事件循环
 				sk.cancel();
 			}
 		}

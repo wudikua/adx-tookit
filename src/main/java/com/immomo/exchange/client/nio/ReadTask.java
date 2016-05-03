@@ -16,7 +16,7 @@ public class ReadTask extends NIOTask {
 	@Override
 	public void run() {
 		try {
-			handler.read(sk);
+			handler.read();
 		} catch (Exception e) {
 			if (handler != null) {
 				handler.close();

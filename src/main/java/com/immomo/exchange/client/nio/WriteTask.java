@@ -16,7 +16,7 @@ public class WriteTask extends NIOTask {
 	@Override
 	public void run() {
 		try {
-			handler.write(sk);
+			handler.write();
 		} catch (Exception e) {
 			if (handler != null) {
 				handler.close();

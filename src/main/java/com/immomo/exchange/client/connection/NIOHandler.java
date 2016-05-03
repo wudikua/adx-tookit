@@ -8,7 +8,7 @@ import java.nio.channels.SelectionKey;
  */
 public interface NIOHandler {
 	public boolean connect(SelectionKey sk) throws Exception;
-	public void write(SelectionKey sk) throws Exception;
-	public void read(SelectionKey sk) throws Exception;
+	public void write() throws Exception;
+	public void read() throws Exception;
 	public void close();
 }

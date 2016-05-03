@@ -62,6 +62,7 @@ public class SingleThreadSelector implements Runnable {
 	}
 
 	public void register(SocketChannel channel, int op, Connection connection, SelectionKey sk) {
+		logger.debug("register {}", op);
 		if (SelectionKey.OP_CONNECT == op) {
 			pending.add(new ConnectEvent(channel, connection, op, sk));
 		} else {

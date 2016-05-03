@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,17 @@ public class ClientTest {
 			System.out.println(System.currentTimeMillis()/1000 + " " + new String(resp.getBody()).substring(0, 10) + "...");
 		}
 		Thread.sleep(1000);
+	}
+
+	@Test
+	public void testQueue() {
+		ConcurrentLinkedQueue queue = new ConcurrentLinkedQueue();
+		Long begin = System.currentTimeMillis();
+		for (int i =0;i<100000; i++) {
+			queue.poll();
+		}
+		Long end = System.currentTimeMillis();
+		System.out.println(end - begin);
 	}
 
 	@Test
@@ -119,7 +131,7 @@ public class ClientTest {
 					for (int j =0; j<10; j++) {
 						try {
 							Future<Response> future = client.get(url);
-							Response resp = future.get();
+							Response resp = future.get(1, TimeUnit.SECONDS);
 							if (resp.getStatus() == 200) {
 								success.incrementAndGet();
 //								System.out.println(new String(resp.getBody()));

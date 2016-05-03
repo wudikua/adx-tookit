@@ -16,6 +16,7 @@ public class Timer {
 
 	public static abstract class TimerUnit implements Comparable {
 		public long deadline;
+		public volatile boolean done = false;
 
 		public TimerUnit(long timeout) {
 			this.deadline = System.currentTimeMillis() + timeout;
@@ -70,6 +71,9 @@ public class Timer {
 			while (it.hasNext()) {
 				TimerUnit timer = it.next();
 				it.remove();
+				if (timer.done) {
+					continue;
+				}
 				try {
 					timer.onTime();
 				} catch (Exception e) {

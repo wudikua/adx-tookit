@@ -18,7 +18,7 @@ public class Config {
 		maxPerHostConnections = 300;
 		// 一个连接最多存活1小时
 		maxConnectionTime = 3600 * 1000;
-		// 10分钟没人用这个链接就回收掉
+		// 10s没人用这个链接就回收掉
 		connectionExpireTime = 10 * 1000;
 	}
 }

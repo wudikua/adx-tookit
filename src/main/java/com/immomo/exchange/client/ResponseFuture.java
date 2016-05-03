@@ -68,7 +68,7 @@ public class ResponseFuture implements Future<Response> {
 		if (unit == null) {
 			throw new InterruptedException("unit is null");
 		}
-		Timer.addTimeout(new Timer.TimerUnit(unit.toMillis(timeout)) {
+		Timer.TimerUnit timer = new Timer.TimerUnit(unit.toMillis(timeout)) {
 			@Override
 			public void onTime() throws Exception {
 				Long begin = System.currentTimeMillis();
@@ -78,7 +78,10 @@ public class ResponseFuture implements Future<Response> {
 				Long end = System.currentTimeMillis();
 				System.out.println("timeout notify use " + (end - begin));
 			}
-		});
-		return get();
+		};
+		Timer.addTimeout(timer);
+		Response r = get();
+		timer.done = true;
+		return r;
 	}
 }
