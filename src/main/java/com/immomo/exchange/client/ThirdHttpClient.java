@@ -27,7 +27,7 @@ public class ThirdHttpClient {
 				.setConnectTimeout(3000)
 				.setRequestTimeout(3000)
 				.setMaxConnections(10000)
-				.setMaxConnectionsPerHost(200)
+				.setMaxConnectionsPerHost(1000)
 				.build();
 		client = new AsyncHttpClient(config);
 	}

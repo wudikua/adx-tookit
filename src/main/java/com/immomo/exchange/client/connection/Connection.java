@@ -42,6 +42,8 @@ public class Connection implements NIOHandler {
 
 	private long createTime = System.currentTimeMillis();
 
+	private SelectionKey sk;
+
 	@Override
 	public String toString() {
 		return "Connection{" +
@@ -57,7 +59,7 @@ public class Connection implements NIOHandler {
 
 	public boolean prepareConnect() throws IOException {
 		if (connected) {
-			selector.register(channel, SelectionKey.OP_WRITE, this, null);
+			selector.register(channel, SelectionKey.OP_WRITE, this, sk);
 			return true;
 		}
 		channel = SocketChannel.open();
@@ -76,6 +78,7 @@ public class Connection implements NIOHandler {
 
 	@Override
 	public boolean connect(SelectionKey sk) throws IOException {
+		this.sk = sk;
 		if (closed) {
 			return false;
 		}
@@ -88,7 +91,9 @@ public class Connection implements NIOHandler {
 
 	@Override
 	public void write(SelectionKey sk) {
+		this.sk = sk;
 		if (closed) {
+			sk.cancel();
 			return;
 		}
 		logger.debug("write data");
@@ -113,7 +118,9 @@ public class Connection implements NIOHandler {
 
 	@Override
 	public void read(SelectionKey sk) {
+		this.sk = sk;
 		if (closed) {
+			sk.cancel();
 			return;
 		}
 		logger.debug("read data");
@@ -137,10 +144,12 @@ public class Connection implements NIOHandler {
 			if (response.finish()) {
 				futureFinish();
 				// 不再继续监听读写事件了
-				sk.cancel();
+				selector.register(channel, SelectionKey.OP_READ, this, sk);
 			} else if (!closed) {
 				// 还有数据需要读取
 				selector.register(channel, SelectionKey.OP_READ, this, sk);
+			} else {
+				sk.cancel();
 			}
 		}
 	}
@@ -157,6 +166,7 @@ public class Connection implements NIOHandler {
 			return;
 		}
 		try {
+			ConnectionControl.release(cacheKey);
 			futureFinish();
 			if (channel != null) {
 				channel.close();

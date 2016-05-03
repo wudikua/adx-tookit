@@ -29,7 +29,11 @@ public class SingleThreadSelector implements Runnable {
 
 	private Queue<NIOEvent> pending = new ConcurrentLinkedQueue<NIOEvent>();
 
-	private ExecutorService reactor = Executors.newFixedThreadPool(100);
+	private static ExecutorService reactor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2,
+			Runtime.getRuntime().availableProcessors() * 4, 10 * 1000,
+			TimeUnit.MILLISECONDS,
+			new LinkedBlockingQueue<Runnable>(10 * 1000)
+	);
 
 	private boolean started = false;
 
@@ -78,11 +82,17 @@ public class SingleThreadSelector implements Runnable {
 				NIOEvent e = it.next();
 				logger.debug("changEvent {}", e.getConnection());
 				try {
-					if (!e.getChannel().isRegistered()) {
-						e.getChannel().register(selector, e.getOp(), e.getConnection());
+					if (e.getSelectionKey() == null) {
+						if (!e.getChannel().isRegistered()) {
+							e.getChannel().register(selector, e.getOp(), e.getConnection());
+							it.remove();
+						} else {
+							logger.info("register next term");
+						}
+					} else if (e.getSelectionKey().isValid()) {
+						e.getSelectionKey().interestOps(e.getOp());
 						it.remove();
 					} else {
-						e.getSelectionKey().interestOps(e.getOp());
 						it.remove();
 					}
 				} catch (Exception  ex) {

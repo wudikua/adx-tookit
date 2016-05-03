@@ -2,6 +2,9 @@ package com.immomo.exchange.client.util;
 
 import com.google.common.collect.*;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -11,34 +14,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class Timer {
 
-	private final static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-	private static final long tickUnit = Long.parseLong(System.getProperty("notify.systimer.tick", "20"));
-	private static volatile long time = System.currentTimeMillis();
-
-	private static class TimerTicker implements Runnable {
-		public void run() {
-			time = System.currentTimeMillis();
-		}
-	}
-
-	public static long currentTimeMillis() {
-		return time;
-	}
-
-	static {
-		executor.scheduleAtFixedRate(new TimerTicker(), tickUnit, tickUnit, TimeUnit.MILLISECONDS); Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				executor.shutdown();
-			}
-		});
-	}
-
 	public static abstract class TimerUnit implements Comparable {
 		public long deadline;
 
 		public TimerUnit(long timeout) {
-			this.deadline = Timer.currentTimeMillis() + timeout;
+			this.deadline = System.currentTimeMillis() + timeout;
 		}
 
 		public abstract void onTime() throws Exception;
@@ -48,9 +28,11 @@ public class Timer {
 		}
 	}
 
-	private static TreeMultimap<Long, TimerUnit> timers = TreeMultimap.create(Ordering.natural().reverse(), Ordering.<TimerUnit>natural());
+	private static TreeMap<Long, List<TimerUnit>> timers = new TreeMap<Long, List<TimerUnit>>();
 
 	public static int MIN_TIMEOUT = 100;
+
+	private static Object mutex = new Object();
 
 	static {
 		new Thread(new Runnable() {
@@ -68,21 +50,32 @@ public class Timer {
 	}
 
 	public static void addTimeout(TimerUnit timer) {
-		timers.put(timer.deadline, timer);
+		List<TimerUnit> tList = timers.get(timer.deadline);
+		if (tList == null) {
+			synchronized (mutex) {
+				tList = timers.get(timer.deadline);
+				if (tList == null) {
+					tList = Lists.newLinkedList();
+					timers.put(timer.deadline, tList);
+				}
+			}
+		}
+		tList.add(timer);
 	}
 
 	private static void schedule() {
-		long now = Timer.currentTimeMillis();
-		long deadline = 0;
-		while (timers.keySet().size() > 0 && (deadline = timers.keySet().first()) <= now) {
-			for (TimerUnit timer : timers.get(deadline)) {
+		long now = System.currentTimeMillis();
+		while (timers.keySet().size() > 0 && timers.firstKey() <= now) {
+			Iterator<TimerUnit> it = timers.pollFirstEntry().getValue().iterator();
+			while (it.hasNext()) {
+				TimerUnit timer = it.next();
+				it.remove();
 				try {
 					timer.onTime();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
-			timers.removeAll(deadline);
 		}
 	}
 

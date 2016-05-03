@@ -17,8 +17,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ClientTest {
 
-//	private static final String url = "http://127.0.0.1:8880";
-	private static final String url = "http://m.baidu.com";
+	private static final String url = "http://127.0.0.1/index.html";
+//	private static final String url = "http://m.baidu.com";
 
 	private static Client client;
 
@@ -74,7 +74,7 @@ public class ClientTest {
 
 	@Test
 	public void abNing() throws InterruptedException {
-		int N = 100;
+		int N = 1000;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
@@ -82,7 +82,7 @@ public class ClientTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<3; j++) {
+					for (int j =0; j<10; j++) {
 						try {
 							Future f = ThirdHttpClient.client.prepareGet(url).execute();
 							com.ning.http.client.Response r = ThirdHttpClient.waitResponse(f, 3000);
@@ -108,7 +108,7 @@ public class ClientTest {
 
 	@Test
 	public void ab() throws InterruptedException {
-		int N = 100;
+		int N = 1000;
 		final CountDownLatch finish = new CountDownLatch(N);
 		Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
@@ -116,10 +116,10 @@ public class ClientTest {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<3; j++) {
+					for (int j =0; j<10; j++) {
 						try {
 							Future<Response> future = client.get(url);
-							Response resp = future.get(3000, TimeUnit.MILLISECONDS);
+							Response resp = future.get();
 							if (resp.getStatus() == 200) {
 								success.incrementAndGet();
 //								System.out.println(new String(resp.getBody()));

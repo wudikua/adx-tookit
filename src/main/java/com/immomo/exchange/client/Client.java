@@ -2,6 +2,7 @@ package com.immomo.exchange.client;
 
 import com.google.common.collect.Lists;
 import com.immomo.exchange.client.connection.Connection;
+import com.immomo.exchange.client.connection.ConnectionControl;
 import com.immomo.exchange.client.connection.ConnectionPool;
 import com.immomo.exchange.client.nio.SingleThreadSelector;
 import com.immomo.exchange.client.protocal.Response;
@@ -47,15 +48,30 @@ public class Client {
 
 	private Connection getConnection(URL parsed) {
 		String cacheKey = ConnectionPool.getKey(parsed.getHost(), parsed.getPort());
-		Connection conn = pool.get(cacheKey);
-		if (conn == null) {
-			int ioThread = r.nextInt(ioThreads);
-			conn = new Connection(parsed, selector.get(ioThread));
-			logger.debug("{} new connection {}", Thread.currentThread().getName(), conn.hashCode());
-		} else {
-			logger.debug("{} get connection {} from pool", Thread.currentThread().getName(), conn.hashCode());
+		while(true) {
+			Connection conn = pool.get(cacheKey);
+			if (conn == null) {
+				if (ConnectionControl.tryAcquire(cacheKey)) {
+					// 还可以创建新连接
+					int ioThread = r.nextInt(ioThreads);
+					conn = new Connection(parsed, selector.get(ioThread));
+					logger.debug("{} new connection {}", Thread.currentThread().getName(), conn.hashCode());
+					return conn;
+				} else {
+					synchronized (cacheKey.intern()) {
+						try {
+							cacheKey.intern().wait();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+					continue;
+				}
+			} else {
+				logger.debug("{} get connection {} from pool", Thread.currentThread().getName(), conn.hashCode());
+			}
+			return conn;
 		}
-		return conn;
 	}
 
 }

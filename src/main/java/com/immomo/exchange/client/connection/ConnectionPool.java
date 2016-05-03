@@ -63,6 +63,8 @@ public class ConnectionPool {
 				if (first.getCreateTime() + Config.maxConnectionTime < now ||
 						first.getLastActiveTime() + Config.connectionExpireTime < now) {
 					// expire
+					ConnectionControl.release(first.getCacheKey());
+					logger.info("expire a connection {}", first);
 					closing.add(first);
 				} else {
 					return first;
@@ -81,6 +83,9 @@ public class ConnectionPool {
 		logger.debug("return connection {}", conn.hashCode());
 		conn.updateActiveTime();
 		free.get(conn.getCacheKey()).add(conn);
+		synchronized (conn.getCacheKey().intern()) {
+			conn.getCacheKey().intern().notifyAll();
+		}
 	}
 
 	public static String getKey(String host, int port) {
