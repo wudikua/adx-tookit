@@ -43,7 +43,9 @@ public class Client {
 		URL parsed = new URL(url);
 		Connection conn = getConnection(parsed);
 		conn.prepareConnect();
-		return new ResponseFuture(conn);
+		ResponseFuture future = new ResponseFuture(conn);
+		conn.setFuture(future);
+		return future;
 	}
 
 	private Connection getConnection(URL parsed) {
@@ -51,7 +53,7 @@ public class Client {
 		while(true) {
 			Connection conn = pool.get(cacheKey);
 			if (conn == null) {
-				if (ConnectionControl.tryAcquire(cacheKey)) {
+				if (true || ConnectionControl.tryAcquire(cacheKey)) {
 					// 还可以创建新连接
 					int ioThread = r.nextInt(ioThreads);
 					conn = new Connection(parsed, selector.get(ioThread));
@@ -60,7 +62,8 @@ public class Client {
 				} else {
 					synchronized (cacheKey.intern()) {
 						try {
-							cacheKey.intern().wait();
+							// 隔一段时间检查一下
+							cacheKey.intern().wait(100);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}

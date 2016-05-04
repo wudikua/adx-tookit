@@ -111,7 +111,7 @@ public class SingleThreadSelector implements Runnable {
 			int select = 0;
 			try {
 				wakenUp.set(false);
-				select = selector.select();
+				select = selector.select(1000);
 			} catch (IOException e) {
 				e.printStackTrace();
 				continue;
@@ -131,6 +131,10 @@ public class SingleThreadSelector implements Runnable {
 						}
 						logger.debug("key op {}", sk.readyOps());
 						handler = (NIOHandler) sk.attachment();
+						if (handler.isClosed()) {
+							sk.cancel();
+							continue;
+						}
 						if (sk.isConnectable()) {
 							sk.interestOps(sk.interestOps() & (~SelectionKey.OP_CONNECT));
 							logger.debug("connect time {}", System.currentTimeMillis());

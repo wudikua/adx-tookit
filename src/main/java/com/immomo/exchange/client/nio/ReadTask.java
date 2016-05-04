@@ -21,9 +21,6 @@ public class ReadTask extends NIOTask {
 			if (handler != null) {
 				handler.close();
 			}
-			if (sk != null) {
-				sk.cancel();
-			}
 			e.printStackTrace();
 		}
 	}

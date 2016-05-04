@@ -27,7 +27,7 @@ public class ConnectionPool {
 				Connection c = null;
 				try {
 					c = closing.poll(1, TimeUnit.SECONDS);
-					if (c != null) {
+					if (c != null && !c.isClosed()) {
 						c.close();
 					}
 				} catch (InterruptedException e) {

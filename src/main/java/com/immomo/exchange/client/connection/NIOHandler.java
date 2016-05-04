@@ -11,4 +11,5 @@ public interface NIOHandler {
 	public void write() throws Exception;
 	public void read() throws Exception;
 	public void close();
+	public boolean isClosed();
 }

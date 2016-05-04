@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -53,13 +54,12 @@ public class ClientTest {
 
 	@Test
 	public void testQueue() {
-		ConcurrentLinkedQueue queue = new ConcurrentLinkedQueue();
-		Long begin = System.currentTimeMillis();
-		for (int i =0;i<100000; i++) {
-			queue.poll();
-		}
-		Long end = System.currentTimeMillis();
-		System.out.println(end - begin);
+		TreeMap<Integer, Integer> s = new TreeMap<Integer, Integer>();
+		s.put(1, 1);
+		s.put(2, 2);
+		s.put(3, 3);
+		System.out.println(s.pollFirstEntry());
+
 	}
 
 	@Test
@@ -86,24 +86,27 @@ public class ClientTest {
 
 	@Test
 	public void abNing() throws InterruptedException {
-		int N = 1000;
+		final int N = 1000;
 		final CountDownLatch finish = new CountDownLatch(N);
-		Long begin = System.currentTimeMillis();
+		final Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
+		final AtomicLong request = new AtomicLong(0);
 		for (int i=0; i<N; i++) {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<10; j++) {
+					for (int j =0; j<100; j++) {
 						try {
+							request.incrementAndGet();
 							Future f = ThirdHttpClient.client.prepareGet(url).execute();
-							com.ning.http.client.Response r = ThirdHttpClient.waitResponse(f, 3000);
+							com.ning.http.client.Response r = ThirdHttpClient.waitResponse(f, 1000);
 							if (r.getStatusCode() == 200) {
-								System.out.println("thread " + Thread.currentThread() + " success");
+//								System.out.println("thread " + Thread.currentThread() + " success");
 								success.incrementAndGet();
 							}
-							if (success.get() % 5 == 0) {
-								System.out.println("thread " + Thread.currentThread() + " " + success.get());
+							if (request.get() % 1000 == 0) {
+								Long end = System.currentTimeMillis();
+								System.out.println("thread " + Thread.currentThread() + " current qps is " + request.get()*1000/(end - begin) + " request " + request.get() + " success " + success.get());
 							}
 						} catch (Exception e) {
 
@@ -120,16 +123,18 @@ public class ClientTest {
 
 	@Test
 	public void ab() throws InterruptedException {
-		int N = 1000;
+		final int N = 1000;
 		final CountDownLatch finish = new CountDownLatch(N);
-		Long begin = System.currentTimeMillis();
+		final Long begin = System.currentTimeMillis();
 		final AtomicLong success = new AtomicLong(0);
+		final AtomicLong request = new AtomicLong(0);
 		for (int i=0; i<N; i++) {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					for (int j =0; j<10; j++) {
+					for (int j =0; j<100; j++) {
 						try {
+							request.incrementAndGet();
 							Future<Response> future = client.get(url);
 							Response resp = future.get(1, TimeUnit.SECONDS);
 							if (resp.getStatus() == 200) {
@@ -139,8 +144,9 @@ public class ClientTest {
 						} catch (Exception e) {
 
 						}
-						if (success.get()%5 == 0) {
-							System.out.println("thread " + Thread.currentThread() + " " + success.get());
+						if (request.get()%1000 == 0) {
+							Long end = System.currentTimeMillis();
+							System.out.println("thread " + Thread.currentThread() + " current qps is " + request.get()*1000/(end - begin) + " request " + request.get() + " success " + success.get());
 						}
 					}
 					finish.countDown();

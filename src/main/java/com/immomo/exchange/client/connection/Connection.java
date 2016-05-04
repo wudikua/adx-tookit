@@ -1,5 +1,6 @@
 package com.immomo.exchange.client.connection;
 
+import com.immomo.exchange.client.ResponseFuture;
 import com.immomo.exchange.client.nio.SingleThreadSelector;
 import com.immomo.exchange.client.protocal.Request;
 import com.immomo.exchange.client.protocal.Response;
@@ -14,6 +15,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.Future;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by mengjun on 16/4/1.
@@ -34,7 +39,11 @@ public class Connection implements NIOHandler {
 
 	private Response response = new Response();
 
-	public final Object notify = new Object();
+	private ResponseFuture future;
+
+	public final Lock lock = new ReentrantLock();
+
+	public final Condition condition = lock.newCondition();
 
 	private String cacheKey;
 
@@ -58,6 +67,9 @@ public class Connection implements NIOHandler {
 	}
 
 	public boolean prepareConnect() throws IOException {
+		if (closed) {
+			return false;
+		}
 		if (connected) {
 			selector.register(channel, SelectionKey.OP_WRITE, this, sk);
 			return true;
@@ -78,13 +90,18 @@ public class Connection implements NIOHandler {
 
 	@Override
 	public boolean connect(SelectionKey sk) throws IOException {
-		this.sk = sk;
 		if (closed) {
 			return false;
 		}
+		this.sk = sk;
 		if (!connected) {
 			connected = channel.finishConnect();
-			selector.register(channel, SelectionKey.OP_WRITE, this, sk);
+			if (connected) {
+				selector.register(channel, SelectionKey.OP_WRITE, this, sk);
+			} else {
+				logger.error("connection establish fail");
+				close();
+			}
 		}
 		return connected;
 	}
@@ -92,7 +109,6 @@ public class Connection implements NIOHandler {
 	@Override
 	public void write() {
 		if (closed) {
-			sk.cancel();
 			return;
 		}
 		logger.debug("write data");
@@ -110,7 +126,6 @@ public class Connection implements NIOHandler {
 				}
 			} catch (IOException e) {
 				logger.error("write error, close connection", e);
-				sk.cancel();
 				close();
 				return;
 			}
@@ -121,7 +136,6 @@ public class Connection implements NIOHandler {
 	@Override
 	public void read() {
 		if (closed) {
-			sk.cancel();
 			return;
 		}
 		logger.debug("read data");
@@ -142,8 +156,8 @@ public class Connection implements NIOHandler {
 			sk.cancel();
 			close();
 		} finally {
-			if (response.finish()) {
-				futureFinish();
+			if (response != null && response.finish()) {
+				futureFinish(true);
 				// 不再继续监听读写事件了
 				selector.register(channel, SelectionKey.OP_READ, this, sk);
 			} else if (!closed) {
@@ -153,23 +167,31 @@ public class Connection implements NIOHandler {
 					if (channel.socket().getInputStream().available() > 0) {
 						selector.register(channel, SelectionKey.OP_READ, this, sk);
 					} else {
-						sk.cancel();
 						close();
 					}
 				} catch (IOException e) {
-					sk.cancel();
 					e.printStackTrace();
+					close();
 				}
 			} else {
 				// future已经超时，不继续监听事件循环
-				sk.cancel();
+				close();
 			}
 		}
 	}
 
-	private void futureFinish() {
-		synchronized (notify) {
-			notify.notifyAll();
+	private void futureFinish(boolean isDone) {
+		try {
+			lock.lock();
+			if (isDone) {
+				future.setDone(true);
+			} else {
+				future.setCancelled(true);
+			}
+			condition.signalAll();
+			lock.unlock();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -180,14 +202,22 @@ public class Connection implements NIOHandler {
 		}
 		try {
 			ConnectionControl.release(cacheKey);
-			futureFinish();
+			futureFinish(false);
 			if (channel != null) {
 				channel.close();
 			}
 			closed = true;
+			if (sk != null && sk.isValid()) {
+				sk.cancel();
+			}
 		} catch (IOException e) {
 			logger.error("close error", e);
 		}
+	}
+
+	@Override
+	public boolean isClosed() {
+		return closed;
 	}
 
 	public Response getResponse() {
@@ -210,5 +240,13 @@ public class Connection implements NIOHandler {
 
 	public long getCreateTime() {
 		return createTime;
+	}
+
+	public Future<Response> getFuture() {
+		return future;
+	}
+
+	public void setFuture(ResponseFuture future) {
+		this.future = future;
 	}
 }
