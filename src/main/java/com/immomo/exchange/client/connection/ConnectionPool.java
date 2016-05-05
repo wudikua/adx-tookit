@@ -15,7 +15,7 @@ public class ConnectionPool {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConnectionPool.class);
 
-	private Map<String, ConcurrentLinkedQueue<Connection>> free;
+	private Map<String, LinkedBlockingDeque<Connection>> free;
 
 	private BlockingQueue<Connection> closing = new ArrayBlockingQueue<Connection>(Config.maxConnections);
 
@@ -47,23 +47,22 @@ public class ConnectionPool {
 		if (free.get(key) == null) {
 			synchronized (key.intern()) {
 				if (free.get(key) == null) {
-					free.put(key, new ConcurrentLinkedQueue<Connection>());
+					free.put(key, new LinkedBlockingDeque<Connection>());
 				}
 			}
 			return null;
 		}
 		try {
-			ConcurrentLinkedQueue<Connection> conns = free.get(key);
+			LinkedBlockingDeque<Connection> conns = free.get(key);
 			if (conns == null || conns.size() == 0) {
 				return null;
 			}
 			Connection first = null;
 			long now = System.currentTimeMillis();
-			while ((first = conns.poll()) != null) {
+			while ((first = conns.pollFirst()) != null) {
 				if (first.getCreateTime() + Config.maxConnectionTime < now ||
 						first.getLastActiveTime() + Config.connectionExpireTime < now) {
 					// expire
-					ConnectionControl.release(first.getCacheKey());
 					logger.info("expire a connection {}", first);
 					closing.add(first);
 				} else {
@@ -78,13 +77,14 @@ public class ConnectionPool {
 
 	public void add(Connection conn) {
 		if (!free.containsKey(conn.getCacheKey())) {
-			free.put(conn.getCacheKey(), new ConcurrentLinkedQueue<Connection>());
+			free.put(conn.getCacheKey(), new LinkedBlockingDeque<Connection>());
 		}
 		logger.debug("return connection {}", conn.hashCode());
 		conn.updateActiveTime();
-		free.get(conn.getCacheKey()).add(conn);
-		synchronized (conn.getCacheKey().intern()) {
-			conn.getCacheKey().intern().notifyAll();
+		try {
+			free.get(conn.getCacheKey()).putLast(conn);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 

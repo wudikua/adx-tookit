@@ -2,7 +2,6 @@ package com.immomo.exchange.client;
 
 import com.google.common.collect.Lists;
 import com.immomo.exchange.client.connection.Connection;
-import com.immomo.exchange.client.connection.ConnectionControl;
 import com.immomo.exchange.client.connection.ConnectionPool;
 import com.immomo.exchange.client.nio.SingleThreadSelector;
 import com.immomo.exchange.client.protocal.Response;
@@ -42,7 +41,7 @@ public class Client {
 	public Future<Response> get(String url) throws Exception {
 		URL parsed = new URL(url);
 		Connection conn = getConnection(parsed);
-		conn.prepareConnect();
+		conn.prepareConnect(parsed);
 		ResponseFuture future = new ResponseFuture(conn);
 		conn.setFuture(future);
 		return future;
@@ -53,23 +52,10 @@ public class Client {
 		while(true) {
 			Connection conn = pool.get(cacheKey);
 			if (conn == null) {
-				if (true || ConnectionControl.tryAcquire(cacheKey)) {
-					// 还可以创建新连接
-					int ioThread = r.nextInt(ioThreads);
-					conn = new Connection(parsed, selector.get(ioThread));
-					logger.debug("{} new connection {}", Thread.currentThread().getName(), conn.hashCode());
-					return conn;
-				} else {
-					synchronized (cacheKey.intern()) {
-						try {
-							// 隔一段时间检查一下
-							cacheKey.intern().wait(100);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-					continue;
-				}
+				int ioThread = r.nextInt(ioThreads);
+				conn = new Connection(selector.get(ioThread));
+				logger.debug("{} new connection {}", Thread.currentThread().getName(), conn.hashCode());
+				return conn;
 			} else {
 				logger.debug("{} get connection {} from pool", Thread.currentThread().getName(), conn.hashCode());
 			}

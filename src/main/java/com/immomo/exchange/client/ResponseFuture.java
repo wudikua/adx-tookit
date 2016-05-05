@@ -1,7 +1,6 @@
 package com.immomo.exchange.client;
 
 import com.immomo.exchange.client.connection.Connection;
-import com.immomo.exchange.client.connection.ConnectionControl;
 import com.immomo.exchange.client.protocal.Response;
 import com.immomo.exchange.client.util.Timer;
 import org.slf4j.Logger;

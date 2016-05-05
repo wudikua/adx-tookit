@@ -44,22 +44,8 @@ public class Timer {
 				}
 			}
 		}).start();
-
-		new Thread(new Runnable() {
-			public void run() {
-				while(true) {
-					try {
-						System.out.println("time units " + timerUnits.size());
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}).start();
 	}
 
-	public static Set<TimerUnit> timerUnits = Sets.newConcurrentHashSet();
 
 	public static synchronized void addTimeout(TimerUnit timer) {
 		List<TimerUnit> tList = timers.get(timer.deadline);
@@ -72,7 +58,6 @@ public class Timer {
 				}
 			}
 		}
-		timerUnits.add(timer);
 		tList.add(timer);
 	}
 
@@ -83,12 +68,10 @@ public class Timer {
 			while (it.hasNext()) {
 				TimerUnit timer = it.next();
 				if (timer.done) {
-					timerUnits.remove(timer);
 					continue;
 				}
 				try {
 					timer.onTime();
-					timerUnits.remove(timer);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

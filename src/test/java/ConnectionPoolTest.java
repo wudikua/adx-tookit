@@ -14,7 +14,7 @@ public class ConnectionPoolTest {
 	@Test
 	public void testMultiGet() throws MalformedURLException, InterruptedException {
 		final ConnectionPool pool = new ConnectionPool();
-		pool.add(new Connection(new URL("http://127.0.0.1"), null));
+		pool.add(new Connection(null));
 		ArrayList<Thread> t = Lists.newArrayList();
 		for (int i=0;i<10;i++) {
 			new Thread(new Runnable() {

@@ -60,13 +60,13 @@ public class Connection implements NIOHandler {
 				'}';
 	}
 
-	public Connection(URL url, SingleThreadSelector selector) {
-		this.url = url;
+	public Connection(SingleThreadSelector selector) {
 		this.selector = selector;
-		this.cacheKey = ConnectionPool.getKey(url.getHost(), url.getPort());
 	}
 
-	public boolean prepareConnect() throws IOException {
+	public boolean prepareConnect(URL url) throws IOException {
+		this.url = url;
+		this.cacheKey = ConnectionPool.getKey(url.getHost(), url.getPort());
 		if (closed) {
 			return false;
 		}
@@ -143,8 +143,8 @@ public class Connection implements NIOHandler {
 			response = new Response();
 		}
 		ByteBuffer buffer = ByteBuffer.allocate(1024*4);
+		int len = 0;
 		try {
-			int len;
 			while((len = channel.read(buffer)) > 0) {
 				buffer.flip();
 				response.parse(buffer.array(), len);
@@ -162,19 +162,16 @@ public class Connection implements NIOHandler {
 				selector.register(channel, SelectionKey.OP_READ, this, sk);
 			} else if (!closed) {
 				// 还有数据需要读取
-				try {
-					// 当服务端主动关闭连接以后，客户端如果不判断available会一直read 0字节
-					if (channel.socket().getInputStream().available() > 0) {
-						selector.register(channel, SelectionKey.OP_READ, this, sk);
-					} else {
-						close();
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
+				// 当服务端主动关闭连接以后，客户端如果不判断available会一直read 0字节
+				if (len >= 0) {
+					selector.register(channel, SelectionKey.OP_READ, this, sk);
+				} else {
+					logger.error("socket is not available close connection, read {}", len);
 					close();
 				}
 			} else {
 				// future已经超时，不继续监听事件循环
+				logger.error("future is timeout");
 				close();
 			}
 		}
@@ -201,7 +198,6 @@ public class Connection implements NIOHandler {
 			return;
 		}
 		try {
-			ConnectionControl.release(cacheKey);
 			futureFinish(false);
 			if (channel != null) {
 				channel.close();

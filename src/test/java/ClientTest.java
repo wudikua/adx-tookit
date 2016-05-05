@@ -27,7 +27,7 @@ public class ClientTest {
 	static {
 		List<SingleThreadSelector> selectors = Lists.newArrayList();
 		try {
-			for (int i=0;i<4;i++) {
+			for (int i=0;i<Runtime.getRuntime().availableProcessors();i++) {
 				SingleThreadSelector selector = new SingleThreadSelector();
 				selector.init();
 				selector.start();
@@ -118,7 +118,7 @@ public class ClientTest {
 		}
 		finish.await();
 		Long end = System.currentTimeMillis();
-		System.out.println("time total use " + (end - begin) + " request " + N + " success " + success.get());
+		System.out.println("time total use " + (end - begin) + " request " + request.get() + " success " + success.get());
 	}
 
 	@Test
@@ -140,9 +140,11 @@ public class ClientTest {
 							if (resp.getStatus() == 200) {
 								success.incrementAndGet();
 //								System.out.println(new String(resp.getBody()));
+							} else {
+								System.out.println("timeout");
 							}
 						} catch (Exception e) {
-
+//							e.printStackTrace();
 						}
 						if (request.get()%1000 == 0) {
 							Long end = System.currentTimeMillis();
@@ -155,7 +157,7 @@ public class ClientTest {
 		}
 		finish.await();
 		Long end = System.currentTimeMillis();
-		System.out.println("time total use " + (end - begin) + " request " + N + " success " + success.get());
+		System.out.println("time total use " + (end - begin) + " request " + request.get() + " success " + success.get());
 	}
 
 	@Test
