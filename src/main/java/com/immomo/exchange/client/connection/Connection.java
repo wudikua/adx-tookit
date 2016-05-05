@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -32,6 +33,12 @@ public class Connection implements NIOHandler {
 	private SingleThreadSelector selector;
 
 	private URL url;
+
+	private byte[] body;
+
+	private String method;
+
+	private Map<String, String> headers;
 
 	private volatile boolean closed = false;
 
@@ -112,7 +119,13 @@ public class Connection implements NIOHandler {
 			return;
 		}
 		logger.debug("write data");
-		ByteBuffer buffer = ByteBuffer.wrap(Request.buildRequest(url));
+		ByteBuffer buffer;
+		if (method.equals("GET")) {
+			buffer = ByteBuffer.wrap(Request.buildRequest(url));
+		} else {
+			buffer = ByteBuffer.wrap(Request.buildRequest(url, method, headers, body));
+		}
+
 		while (buffer.hasRemaining()) {
 			try {
 				if (closed) {
@@ -244,5 +257,17 @@ public class Connection implements NIOHandler {
 
 	public void setFuture(ResponseFuture future) {
 		this.future = future;
+	}
+
+	public void setBody(byte[] body) {
+		this.body = body;
+	}
+
+	public void setHeaders(Map<String, String> headers) {
+		this.headers = headers;
+	}
+
+	public void setMethod(String method) {
+		this.method = method;
 	}
 }

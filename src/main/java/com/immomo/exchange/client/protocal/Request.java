@@ -15,16 +15,18 @@ import java.util.Map;
 public class Request {
 
 	private static final String template =
-			"GET {} HTTP/1.1\nConnection: keep-alive\nHost: {}\nUser-Agent:AdExchange\n";
+			"{} {} HTTP/1.1\nConnection: keep-alive\nHost: {}\nUser-Agent:AdExchange\n";
 
-	public static byte[] buildRequest(URL url, Map<String, String> headers, byte[] body) {
+	public static byte[] buildRequest(URL url, String method, Map<String, String> headers, byte[] body) {
 		String uri = "/";
 		if (!url.getPath().equals("")) {
 			uri  = url.getPath();
 		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 		try {
-			out.write(MessageFormatter.arrayFormat(template, new Object[]{uri, url.getHost()}).getMessage().getBytes());
+			out.write(MessageFormatter.arrayFormat(template, new Object[]{
+					method, uri, url.getHost()
+			}).getMessage().getBytes());
 			if (headers != null && headers.size() > 0) {
 				for (String key : headers.keySet()) {
 					out.write(key.getBytes());
@@ -48,7 +50,9 @@ public class Request {
 		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 		try {
-			out.write(MessageFormatter.arrayFormat(template, new Object[]{uri, url.getHost()}).getMessage().getBytes());
+			out.write(MessageFormatter.arrayFormat(template, new Object[]{
+					"GET", uri, url.getHost(),
+			}).getMessage().getBytes());
 			out.write('\n');
 		} catch (IOException e) {
 			e.printStackTrace();

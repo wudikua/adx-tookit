@@ -47,6 +47,18 @@ public class Client {
 		return future;
 	}
 
+	public Future<Response> post(String url, byte[] body) throws Exception {
+		URL parsed = new URL(url);
+		Connection conn = getConnection(parsed);
+		conn.setBody(body);
+		conn.setHeaders(null);
+		conn.setMethod("POST");
+		conn.prepareConnect(parsed);
+		ResponseFuture future = new ResponseFuture(conn);
+		conn.setFuture(future);
+		return future;
+	}
+
 	private Connection getConnection(URL parsed) {
 		String cacheKey = ConnectionPool.getKey(parsed.getHost(), parsed.getPort());
 		while(true) {
