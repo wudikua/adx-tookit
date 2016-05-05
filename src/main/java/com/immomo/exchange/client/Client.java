@@ -41,6 +41,9 @@ public class Client {
 	public Future<Response> get(String url) throws Exception {
 		URL parsed = new URL(url);
 		Connection conn = getConnection(parsed);
+		conn.setBody(null);
+		conn.setHeaders(null);
+		conn.setMethod("GET");
 		conn.prepareConnect(parsed);
 		ResponseFuture future = new ResponseFuture(conn);
 		conn.setFuture(future);
