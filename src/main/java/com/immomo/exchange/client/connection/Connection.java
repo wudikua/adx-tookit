@@ -9,10 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
@@ -82,9 +80,9 @@ public class Connection implements NIOHandler {
 			return true;
 		}
 		channel = SocketChannel.open();
-		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-		channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+		channel.socket().setKeepAlive(true);
+		channel.socket().setReuseAddress(true);
+		channel.socket().setTcpNoDelay(true);
 		channel.configureBlocking(false);
 		int port = url.getPort();
 		if (port <= 0) {
@@ -129,7 +127,6 @@ public class Connection implements NIOHandler {
 		while (buffer.hasRemaining()) {
 			try {
 				if (closed) {
-					// 防止hasRemaining死循环
 					sk.cancel();
 					return;
 				}
@@ -171,11 +168,11 @@ public class Connection implements NIOHandler {
 		} finally {
 			if (response != null && response.finish()) {
 				futureFinish(true);
-				// 不再继续监听读写事件了
+				// register read
 				selector.register(channel, SelectionKey.OP_READ, this, sk);
 			} else if (!closed) {
-				// 还有数据需要读取
-				// 当服务端主动关闭连接以后，客户端如果不判断available会一直read 0字节
+				// read more
+				// server is closed
 				if (len >= 0) {
 					selector.register(channel, SelectionKey.OP_READ, this, sk);
 				} else {
@@ -183,7 +180,7 @@ public class Connection implements NIOHandler {
 					close();
 				}
 			} else {
-				// future已经超时，不继续监听事件循环
+				// future is timeout close conenction
 				logger.error("future is timeout");
 				close();
 			}

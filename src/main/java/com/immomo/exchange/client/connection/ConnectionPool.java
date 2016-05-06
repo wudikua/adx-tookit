@@ -38,7 +38,7 @@ public class ConnectionPool {
 	}
 
 	public ConnectionPool() {
-		// 清理线程
+		// clean thread
 		new Thread(new ConnectionPoolCleaner()).start();
 		this.free = Maps.newConcurrentMap();
 	}

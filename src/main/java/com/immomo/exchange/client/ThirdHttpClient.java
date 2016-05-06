@@ -44,7 +44,6 @@ public class ThirdHttpClient {
 //			e.printStackTrace();
 		}
 		if (response == null) {
-			// 释放长链接
 			future.cancel(true);
 		}
 		return response;

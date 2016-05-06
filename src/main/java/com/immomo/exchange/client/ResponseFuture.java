@@ -55,7 +55,7 @@ public class ResponseFuture implements Future<Response> {
 	public Response get() throws InterruptedException, ExecutionException {
 		logger.debug("get begin {}", System.currentTimeMillis());
 		while(!isDone() && !isCancelled()) {
-			// 没结束就继续等待
+			// wait until connection finish
 			connection.lock.lock();
 			begin.countDown();
 			condition.await();

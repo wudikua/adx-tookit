@@ -157,8 +157,8 @@ public class Response {
 	}
 
 	/**
-	 * 在之前的容量上扩展cap个字节
-	 * @param cap 扩容的数量
+	 * ensure cap
+	 * @param cap
 	 */
 	private void grow(int cap, byte[] bs) {
 		if (cap == 0) {
