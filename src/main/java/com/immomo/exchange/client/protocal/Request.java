@@ -15,7 +15,7 @@ import java.util.Map;
 public class Request {
 
 	private static final String template =
-			"{} {} HTTP/1.1\nConnection: keep-alive\nHost: {}\nUser-Agent:AdExchange\n";
+			"{} {} HTTP/1.1\nConnection: keep-alive\nHost: {}\nAccept: */*\nUser-Agent: AdExchange\n";
 
 	public static byte[] buildRequest(URL url, String method, Map<String, String> headers, byte[] body) {
 		String uri = "/";
@@ -27,6 +27,14 @@ public class Request {
 			out.write(MessageFormatter.arrayFormat(template, new Object[]{
 					method, uri, url.getHost()
 			}).getMessage().getBytes());
+			out.write("Content-Length: ".getBytes());
+			if (body != null) {
+				out.write(String.valueOf(body.length).getBytes());
+			} else {
+				out.write("0".getBytes());
+			}
+			out.write('\n');
+
 			if (headers != null && headers.size() > 0) {
 				for (String key : headers.keySet()) {
 					out.write(key.getBytes());
@@ -35,7 +43,10 @@ public class Request {
 					out.write('\n');
 				}
 			}
-			out.write(body);
+			out.write('\n');
+			if (body != null) {
+				out.write(body);
+			}
 			out.write('\n');
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -43,20 +54,4 @@ public class Request {
 		return out.toByteArray();
 	}
 
-	public static byte[] buildRequest(URL url) {
-		String uri = "/";
-		if (!url.getPath().equals("")) {
-			uri  = url.getPath();
-		}
-		ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
-		try {
-			out.write(MessageFormatter.arrayFormat(template, new Object[]{
-					"GET", uri, url.getHost(),
-			}).getMessage().getBytes());
-			out.write('\n');
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return out.toByteArray();
-	}
 }

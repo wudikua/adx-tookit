@@ -27,7 +27,7 @@ public class Timer {
 
 	private static TreeMap<Long, List<TimerUnit>> timers = new TreeMap<Long, List<TimerUnit>>();
 
-	public static int MIN_TIMEOUT = 100;
+	public static int MIN_TIMEOUT = 10;
 
 	private static final Object mutex = new Object();
 

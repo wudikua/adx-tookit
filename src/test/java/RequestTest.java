@@ -11,6 +11,6 @@ public class RequestTest {
 	@Test
 	public void testRequestBuilder() throws MalformedURLException {
 		URL u  = new URL("http://www.baidu.com");
-		System.out.println(new String(Request.buildRequest(u)));
+		System.out.println(new String(Request.buildRequest(u, "GET", null, null)));
 	}
 }

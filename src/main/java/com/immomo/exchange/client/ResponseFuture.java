@@ -53,7 +53,6 @@ public class ResponseFuture implements Future<Response> {
 	}
 
 	public Response get() throws InterruptedException, ExecutionException {
-		logger.debug("get begin {}", System.currentTimeMillis());
 		while(!isDone() && !isCancelled()) {
 			// wait until connection finish
 			connection.lock.lock();
@@ -61,7 +60,6 @@ public class ResponseFuture implements Future<Response> {
 			condition.await();
 			connection.lock.unlock();
 		}
-		logger.debug("get end {}", System.currentTimeMillis());
 		Response response =  connection.getResponse();
 		if (response == null) {
 			throw new ExecutionException(new Exception("request fail"));

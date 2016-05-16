@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Future;
 
@@ -44,6 +45,18 @@ public class Client {
 		conn.setBody(null);
 		conn.setHeaders(null);
 		conn.setMethod("GET");
+		conn.prepareConnect(parsed);
+		ResponseFuture future = new ResponseFuture(conn);
+		conn.setFuture(future);
+		return future;
+	}
+
+	public Future<Response> execute(String method, String url, byte[] body, Map<String, String> header) throws Exception {
+		URL parsed = new URL(url);
+		Connection conn = getConnection(parsed);
+		conn.setBody(body);
+		conn.setHeaders(header);
+		conn.setMethod(method);
 		conn.prepareConnect(parsed);
 		ResponseFuture future = new ResponseFuture(conn);
 		conn.setFuture(future);

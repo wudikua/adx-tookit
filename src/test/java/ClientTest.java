@@ -6,7 +6,9 @@ import com.immomo.exchange.client.protocal.Response;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -21,6 +23,8 @@ public class ClientTest {
 
 	private static final String url = "http://127.0.0.1/index.html";
 //	private static final String url = "http://m.baidu.com";
+	private static final String postUrl = "http://api.w.inmobi.com/showad/v2.1";
+	private static final String postData = "{\"responseformat\":\"native\",\"imp\":[{\"ads\":1}],\"site\":{\"id\":\"1bbb4214e04c4da482a767ec9ad24add\"},\"device\":{\"ida\":\"96CF2863-9603-44F8-8D9A-45D3838A92A7\",\"ip\":\"123.125.212.11\",\"connectiontype\":\"wifi\",\"geo\":{\"lat\":\"39.9971\",\"lon\":\"116.4802\",\"accu\":\"\"},\"ua\":\"Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/13E238\"},\"user\":{\"gender\":\"m\",\"yob\":\"1989\"}}";
 
 	private static Client client;
 
@@ -37,6 +41,19 @@ public class ClientTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Test
+	public void testPost() throws Exception {
+		System.out.println(
+		ThirdHttpClient.client.preparePost(postUrl).setBody(postData).addHeader("Content-Type", "application/json").execute().get().getResponseBody());
+		Map<String, String> headers = new HashMap<String, String>();
+		headers.put("Content-Type", "application/json");
+		Future<Response> f = client.execute("POST", postUrl, postData.getBytes(), headers);
+		Response r = f.get();
+		System.out.println(r);
+		System.out.println(r.getStatus());
+		System.out.println(new String(r.getBody()));
 	}
 
 	@Test

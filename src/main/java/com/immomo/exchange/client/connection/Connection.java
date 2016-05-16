@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -116,13 +117,8 @@ public class Connection implements NIOHandler {
 		if (closed) {
 			return;
 		}
-		logger.debug("write data");
 		ByteBuffer buffer;
-		if (method.equals("GET")) {
-			buffer = ByteBuffer.wrap(Request.buildRequest(url));
-		} else {
-			buffer = ByteBuffer.wrap(Request.buildRequest(url, method, headers, body));
-		}
+		buffer = ByteBuffer.wrap(Request.buildRequest(url, method, headers, body));
 
 		while (buffer.hasRemaining()) {
 			try {
@@ -143,12 +139,21 @@ public class Connection implements NIOHandler {
 		selector.register(channel, SelectionKey.OP_READ, this, sk);
 	}
 
+	private boolean isConnected() {
+		if (channel == null) {
+			return false;
+		}
+		Socket socket = channel.socket();
+		return socket != null && socket.isBound() && !socket.isClosed()
+				&& socket.isConnected() && !socket.isInputShutdown()
+				&& !socket.isOutputShutdown();
+	}
+
 	@Override
 	public void read() {
 		if (closed) {
 			return;
 		}
-		logger.debug("read data");
 		if (response == null) {
 			response = new Response();
 		}
@@ -172,8 +177,8 @@ public class Connection implements NIOHandler {
 				selector.register(channel, SelectionKey.OP_READ, this, sk);
 			} else if (!closed) {
 				// read more
-				// server is closed
-				if (len >= 0) {
+				// server is not closed
+				if (len >= 0 || isConnected()) {
 					selector.register(channel, SelectionKey.OP_READ, this, sk);
 				} else {
 					logger.error("socket is not available close connection, read {}", len);
