@@ -24,7 +24,8 @@ public class ClientTest {
 	private static final String url = "http://127.0.0.1/index.html";
 //	private static final String url = "http://m.baidu.com";
 	private static final String postUrl = "http://api.w.inmobi.com/showad/v2.1";
-	private static final String postData = "{\"responseformat\":\"native\",\"imp\":[{\"ads\":1}],\"site\":{\"id\":\"1bbb4214e04c4da482a767ec9ad24add\"},\"device\":{\"ida\":\"96CF2863-9603-44F8-8D9A-45D3838A92A7\",\"ip\":\"123.125.212.11\",\"connectiontype\":\"wifi\",\"geo\":{\"lat\":\"39.9971\",\"lon\":\"116.4802\",\"accu\":\"\"},\"ua\":\"Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/13E238\"},\"user\":{\"gender\":\"m\",\"yob\":\"1989\"}}";
+	private static final String postData = "{\"responseformat\":\"native\",\"imp\":[{\"ads\":3}],\"site\":{\"id\":\"1bbb4214e04c4da482a767ec9ad24add\"},\"device\":{\"ida\":\"96CF2863-9603-44F8-8D9A-45D3838A92A7\",\"ip\":\"123.125.212.11\",\"connectiontype\":\"wifi\",\"geo\":{\"lat\":\"39.9971\",\"lon\":\"116.4802\",\"accu\":\"\"},\"ua\":\"Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/13E238\"},\"user\":{\"gender\":\"m\",\"yob\":\"1989\"}}";
+//	private static final String postData = "{\"responseformat\":\"native\",\"imp\":[{\"ads\":3}],\"site\":{\"id\":\"1bbb4214e04c4da482a767ec9ad24add\"},\"device\":{\"ida\":\"96CF2863-9603-44F8-9FAB-45D3838A92A7\",\"ip\":\"123.125.222.11\",\"connectiontype\":\"wifi\",\"geo\":{\"lat\":\"39.9971\",\"lon\":\"116.4802\",\"accu\":\"\"},\"ua\":\"Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/13E238\"},\"user\":{\"gender\":\"m\",\"yob\":\"1985\"}}";
 
 	private static Client client;
 
@@ -50,7 +51,7 @@ public class ClientTest {
 		Map<String, String> headers = new HashMap<String, String>();
 		headers.put("Content-Type", "application/json");
 		Future<Response> f = client.execute("POST", postUrl, postData.getBytes(), headers);
-		Response r = f.get();
+		Response r = f.get(10, TimeUnit.MILLISECONDS);
 		System.out.println(r);
 		System.out.println(r.getStatus());
 		System.out.println(new String(r.getBody()));

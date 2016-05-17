@@ -53,14 +53,25 @@ public class ResponseFuture implements Future<Response> {
 	}
 
 	public Response get() throws InterruptedException, ExecutionException {
-		while(!isDone() && !isCancelled()) {
+		while (!isDone() && !isCancelled()) {
 			// wait until connection finish
 			connection.lock.lock();
 			begin.countDown();
 			condition.await();
 			connection.lock.unlock();
 		}
-		Response response =  connection.getResponse();
+		Timer.TimerUnit timer = new Timer.TimerUnit(Config.globalTimeout) {
+			@Override
+			public void onTime() throws Exception {
+				begin.await();
+				connection.lock.lock();
+				cancelled = true;
+				condition.signalAll();
+				connection.lock.unlock();
+			}
+		};
+		Timer.addTimeout(timer);
+		Response response = connection.getResponse();
 		if (response == null) {
 			throw new ExecutionException(new Exception("request fail"));
 		}
@@ -76,21 +87,27 @@ public class ResponseFuture implements Future<Response> {
 		if (unit == null) {
 			throw new InterruptedException("unit is null");
 		}
-		Timer.TimerUnit timer = new Timer.TimerUnit(unit.toMillis(timeout)) {
-			@Override
-			public void onTime() throws Exception {
-				begin.await();
-				connection.lock.lock();
+		Long now = System.currentTimeMillis();
+		while (!isDone() && !isCancelled()) {
+			// wait until connection finish
+			connection.lock.lock();
+			begin.countDown();
+			condition.await(timeout, unit);
+			if (System.currentTimeMillis() > now + unit.toMillis(timeout)) {
 				cancelled = true;
-				condition.signalAll();
-				connection.lock.unlock();
+				throw new TimeoutException();
 			}
-		};
-		Timer.addTimeout(timer);
-		try {
-			return get();
-		} finally {
-			timer.done = true;
+			connection.lock.unlock();
+		}
+		Response response = connection.getResponse();
+		if (response == null) {
+			throw new ExecutionException(new Exception("request fail"));
+		}
+		if (response.finish()) {
+			Client.pool.add(connection);
+			return response;
+		} else {
+			return null;
 		}
 	}
 }
