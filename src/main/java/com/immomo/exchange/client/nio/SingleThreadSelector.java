@@ -30,9 +30,9 @@ public class SingleThreadSelector implements Runnable {
 	private Queue<NIOEvent> pending = new ConcurrentLinkedQueue<NIOEvent>();
 
 	private static ExecutorService reactor = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2,
-			Runtime.getRuntime().availableProcessors() * 4, 10 * 1000,
+			Runtime.getRuntime().availableProcessors() * 16, 10 * 1000,
 			TimeUnit.MILLISECONDS,
-			new LinkedBlockingQueue<Runnable>(10 * 1000)
+			new LinkedBlockingQueue<Runnable>(100)
 	);
 
 	private boolean started = false;
